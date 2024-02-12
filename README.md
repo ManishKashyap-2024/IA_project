@@ -1,14 +1,10 @@
-# stock-app
-```
-### Install prerequisite libraries
+# stock insights app
 
-```
-pip install -r requirements.txt
-```
+1. Install prerequisite libraries
 
+`pip install -r requirements.txt`
 
-###  Launch the app
+2. Launch the app
 
-```
-streamlit run stock_price.py
-```
+`streamlit run stock_price.py`
+‸
