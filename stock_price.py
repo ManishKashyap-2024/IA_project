@@ -66,8 +66,8 @@ class StocksAnalyzerApp:
         st.header('**Financial Metrics**')
         metrics = {
             "Metric": ["Latest Price", "Previous Closing Price", "52 Week High Price", "52 Week Low Price",
-                       "Price to Earnings Ratio", "Beta ratio: volatility indicator",
-                       "PEG Ratio", "Last Earnings Date", "Next Earnings Date", "Forward P/E Ratio"],
+                       "Trailing Price to Earnings Ratio", "Beta ratio: volatility indicator",
+                       "PEG Ratio", "Forward P/E Ratio"],
             "Value": [
                 self.ticker_data.info.get('regularMarketPrice', 'Not available'),
                 self.ticker_data.info.get('previousClose', None),
@@ -76,8 +76,6 @@ class StocksAnalyzerApp:
                 self.ticker_data.info.get('trailingPE', 'N/A'),
                 self.ticker_data.info.get('beta', 'N/A'),
                 self.ticker_data.info.get('pegRatio', 'N/A'),
-                self.ticker_data.info.get('lastEarningsDate', 'N/A'),
-                self.ticker_data.info.get('nextEarningsDate', 'N/A'),
                 self.ticker_data.info.get('forwardPE', 'N/A')
             ]
         }
