@@ -19,6 +19,7 @@ authenticator = stauth.Authenticate(
     config['cookie']['expiry_days']
 )
 
+authenticator.login()
 
 class StocksAnalyzerApp:
     def __init__(self):
