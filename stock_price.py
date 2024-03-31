@@ -7,13 +7,11 @@ import hmac
 
 class PasswordManager:
     def __init__(self):
-        self.username = None
-        self.password = None
-        self.password_correct = False
+        pass
 
     def check_password(self):
         """Returns `True` if the user had a correct password."""
-        login_form = LoginForm(self)
+        login_form = LoginForm()
 
         if self.password_correct:
             return True
@@ -23,32 +21,37 @@ class PasswordManager:
 
     def password_entered(self):
         """Checks whether a password entered by the user is correct."""
-        if self.username in st.secrets["passwords"] and hmac.compare_digest(
-            self.password,
-            st.secrets.passwords[self.username],
+        if st.session_state["username"] in st.secrets[
+            "passwords"
+        ] and hmac.compare_digest(
+            st.session_state["password"],
+            st.secrets.passwords[st.session_state["username"]],
         ):
-            self.password_correct = True
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the username or password.
+            del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
 
 
 class LoginForm:
-    def __init__(self, password_manager):
-        self.password_manager = password_manager
+    def __init__(self):
+        pass
 
     def display(self):
         """Displays login form"""
         with st.form("Credentials"):
-            self.password_manager.username = st.text_input("Username", key="username")
-            self.password_manager.password = st.text_input("Password", type="password", key="password")
+            st.text_input("Username", key="username")
+            st.text_input("Password", type="password", key="password")
             submit_button = st.form_submit_button("Log in")
             if submit_button:
-                self.password_manager.password_entered()
+                password_manager = PasswordManager()
+                password_manager.password_entered()
 
-if __name__ == "__main__":
-    password_manager = PasswordManager()
-    if not password_manager.check_password():
-        st.stop()
+
+password_manager = PasswordManager()
+if not password_manager.check_password():
+    st.stop()
 
 
 class StocksAnalyzerApp:
