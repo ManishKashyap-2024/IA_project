@@ -4,6 +4,8 @@ import pandas as pd
 import cufflinks as cf
 import datetime
 import matplotlib.pyplot as plt
+import streamlit_authenticator as stauth
+
 
 class StocksAnalyzerApp:
     def __init__(self):
