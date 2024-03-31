@@ -1,0 +1,14 @@
+credentials:
+  usernames:
+    kppatnaik:
+      email: patnaik.kaliprasad@gmail.com
+      name: Kali Prasad Patnaik
+      password: pinky123 # To be replaced with hashed password
+    abhijitkalita:
+      email: abhijit.kalita@gmail.com
+      name: Abhijit Kalita
+      password: abhi123 # To be replaced with hashed password
+cookie:
+  expiry_days: 30
+  key: 'abcxyz123456' #string
+  name: cookie_stock_insight_app
