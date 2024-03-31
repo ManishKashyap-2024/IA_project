@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import cufflinks as cf
 import datetime
+import matplotlib.pyplot as plt
 import hmac
 
 def check_password():
@@ -43,7 +44,6 @@ def check_password():
 if not check_password():
     st.stop()
 
-
 class StocksAnalyzerApp:
     def __init__(self):
         self.today = datetime.date.today()
@@ -51,12 +51,8 @@ class StocksAnalyzerApp:
         self.end_date = self.today
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.ticker_symbol = None
-        self.password_manager = PasswordManager()
 
     def run(self):
-        if not self.password_manager.check_password():
-            st.stop()
-
         self.display_app_title()
         self.display_date_inputs()
         self.select_ticker_symbol()
@@ -187,7 +183,6 @@ class StocksAnalyzerApp:
 
         st.markdown('Stock Price App built by *Manish Ranjan Kashyap*')
         st.write('---')
-
 
 if __name__ == "__main__":
     app = StocksAnalyzerApp()
