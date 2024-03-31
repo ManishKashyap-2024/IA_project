@@ -3,46 +3,41 @@ import yfinance as yf
 import pandas as pd
 import cufflinks as cf
 import datetime
-import matplotlib.pyplot as plt
 import hmac
 
-def check_password():
-    """Returns `True` if the user had a correct password."""
 
-    def login_form():
-        """Form with widgets to collect user information"""
-        with st.form("Credentials"):
-            st.text_input("Username", key="username")
-            st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=password_entered)
+class PasswordManager:
+    def __init__(self):
+        self.username = None
+        self.password = None
+        self.password_correct = False
 
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["username"] in st.secrets[
-            "passwords"
-        ] and hmac.compare_digest(
-            st.session_state["password"],
-            st.secrets.passwords[st.session_state["username"]],
-        ):
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Don't store the username or password.
-            del st.session_state["username"]
-        else:
-            st.session_state["password_correct"] = False
+    def check_password(self):
+        """Returns `True` if the user had a correct password."""
 
-    # Return True if the username + password is validated.
-    if st.session_state.get("password_correct", False):
-        return True
+        def login_form():
+            """Form with widgets to collect user information"""
+            with st.form("Credentials"):
+                self.username = st.text_input("Username", key="username")
+                self.password = st.text_input("Password", type="password", key="password")
+                st.form_submit_button("Log in", on_click=self.password_entered)
 
-    # Show inputs for username + password.
-    login_form()
-    if "password_correct" in st.session_state:
-        st.error("😕 User not known or password incorrect")
-    return False
+        def password_entered(self):
+            """Checks whether a password entered by the user is correct."""
+            if self.username in st.secrets["passwords"] and hmac.compare_digest(
+                self.password,
+                st.secrets.passwords[self.username],
+            ):
+                self.password_correct = True
+            else:
+                st.error("😕 User not known or password incorrect")
 
+        if self.password_correct:
+            return True
 
-if not check_password():
-    st.stop()
+        login_form()
+        return False
+
 
 class StocksAnalyzerApp:
     def __init__(self):
@@ -51,8 +46,12 @@ class StocksAnalyzerApp:
         self.end_date = self.today
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.ticker_symbol = None
+        self.password_manager = PasswordManager()
 
     def run(self):
+        if not self.password_manager.check_password():
+            st.stop()
+
         self.display_app_title()
         self.display_date_inputs()
         self.select_ticker_symbol()
@@ -183,6 +182,7 @@ class StocksAnalyzerApp:
 
         st.markdown('Stock Price App built by *Manish Ranjan Kashyap*')
         st.write('---')
+
 
 if __name__ == "__main__":
     app = StocksAnalyzerApp()
