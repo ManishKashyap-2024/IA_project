@@ -45,6 +45,11 @@ class LoginForm:
             if submit_button:
                 self.password_manager.password_entered()
 
+if __name__ == "__main__":
+    password_manager = PasswordManager()
+    if not password_manager.check_password():
+        st.stop()
+
 
 class StocksAnalyzerApp:
     def __init__(self):
@@ -192,8 +197,5 @@ class StocksAnalyzerApp:
 
 
 if __name__ == "__main__":
-    password_manager = PasswordManager()
-    if not password_manager.check_password():
-        st.stop()
     app = StocksAnalyzerApp()
     app.run()
