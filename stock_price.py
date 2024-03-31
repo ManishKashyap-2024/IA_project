@@ -23,6 +23,7 @@ class PasswordManager:
                 if submit_button:
                     self.password_entered()
 
+        # Define password_entered as a method of PasswordManager
         def password_entered(self):
             """Checks whether a password entered by the user is correct."""
             if self.username in st.secrets["passwords"] and hmac.compare_digest(
@@ -33,6 +34,7 @@ class PasswordManager:
             else:
                 st.error("😕 User not known or password incorrect")
 
+        # Check password correctness
         if self.password_correct:
             return True
 
