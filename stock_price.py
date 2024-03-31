@@ -5,21 +5,17 @@ import cufflinks as cf
 import datetime
 import hmac
 
-class PasswordManager:
-    def __init__(self):
-        pass
+def check_password():
+    """Returns `True` if the user had a correct password."""
 
-    def check_password(self):
-        """Returns `True` if the user had a correct password."""
-        login_form = LoginForm()
+    def login_form():
+        """Form with widgets to collect user information"""
+        with st.form("Credentials"):
+            st.text_input("Username", key="username")
+            st.text_input("Password", type="password", key="password")
+            st.form_submit_button("Log in", on_click=password_entered)
 
-        if self.password_correct:
-            return True
-
-        login_form.display()
-        return False
-
-    def password_entered(self):
+    def password_entered():
         """Checks whether a password entered by the user is correct."""
         if st.session_state["username"] in st.secrets[
             "passwords"
@@ -33,24 +29,18 @@ class PasswordManager:
         else:
             st.session_state["password_correct"] = False
 
+    # Return True if the username + password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
 
-class LoginForm:
-    def __init__(self):
-        pass
-
-    def display(self):
-        """Displays login form"""
-        with st.form("Credentials"):
-            st.text_input("Username", key="username")
-            st.text_input("Password", type="password", key="password")
-            submit_button = st.form_submit_button("Log in")
-            if submit_button:
-                password_manager = PasswordManager()
-                password_manager.password_entered()
+    # Show inputs for username + password.
+    login_form()
+    if "password_correct" in st.session_state:
+        st.error("😕 User not known or password incorrect")
+    return False
 
 
-password_manager = PasswordManager()
-if not password_manager.check_password():
+if not check_password():
     st.stop()
 
 
