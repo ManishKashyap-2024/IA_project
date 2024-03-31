@@ -5,7 +5,6 @@ import cufflinks as cf
 import datetime
 import hmac
 
-
 class PasswordManager:
     def __init__(self):
         self.username = None
@@ -23,7 +22,7 @@ class PasswordManager:
                 submit_button = st.form_submit_button("Log in")
                 if submit_button:
                     self.password_entered()
-        
+
         def password_entered(self):
             """Checks whether a password entered by the user is correct."""
             if self.username in st.secrets["passwords"] and hmac.compare_digest(
@@ -36,9 +35,10 @@ class PasswordManager:
 
         if self.password_correct:
             return True
-            
+
         login_form()
         return False
+
 
 
 class StocksAnalyzerApp:
