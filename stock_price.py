@@ -13,34 +13,37 @@ class PasswordManager:
 
     def check_password(self):
         """Returns `True` if the user had a correct password."""
+        login_form = LoginForm(self)
 
-        def login_form():
-            """Form with widgets to collect user information"""
-            with st.form("Credentials"):
-                self.username = st.text_input("Username", key="username")
-                self.password = st.text_input("Password", type="password", key="password")
-                submit_button = st.form_submit_button("Log in")
-                if submit_button:
-                    self.password_entered()
-
-        # Define password_entered as a method of PasswordManager
-        def password_entered(self):
-            """Checks whether a password entered by the user is correct."""
-            if self.username in st.secrets["passwords"] and hmac.compare_digest(
-                self.password,
-                st.secrets.passwords[self.username],
-            ):
-                self.password_correct = True
-            else:
-                st.error("😕 User not known or password incorrect")
-
-        # Check password correctness
         if self.password_correct:
             return True
 
-        login_form()
+        login_form.display()
         return False
 
+    def password_entered(self):
+        """Checks whether a password entered by the user is correct."""
+        if self.username in st.secrets["passwords"] and hmac.compare_digest(
+            self.password,
+            st.secrets.passwords[self.username],
+        ):
+            self.password_correct = True
+        else:
+            st.session_state["password_correct"] = False
+
+
+class LoginForm:
+    def __init__(self, password_manager):
+        self.password_manager = password_manager
+
+    def display(self):
+        """Displays login form"""
+        with st.form("Credentials"):
+            self.password_manager.username = st.text_input("Username", key="username")
+            self.password_manager.password = st.text_input("Password", type="password", key="password")
+            submit_button = st.form_submit_button("Log in")
+            if submit_button:
+                self.password_manager.password_entered()
 
 
 class StocksAnalyzerApp:
@@ -189,5 +192,8 @@ class StocksAnalyzerApp:
 
 
 if __name__ == "__main__":
+    password_manager = PasswordManager()
+    if not password_manager.check_password():
+        st.stop()
     app = StocksAnalyzerApp()
     app.run()
