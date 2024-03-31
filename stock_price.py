@@ -6,46 +6,47 @@ import datetime
 import matplotlib.pyplot as plt
 import hmac
 
-def check_password():
-    """Returns `True` if the user had a correct password."""
+class Authentication:
+    def __init__(self):
+        self.password_correct = st.session_state.get("password_correct", False)
 
-    def login_form():
+    def check_password(self):
+        """Returns `True` if the user had a correct password."""
+        if self.password_correct:
+            return True
+
+        # Show inputs for username + password.
+        self.login_form()
+
+        if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+            st.error("😕 User not known or password incorrect")
+
+        return self.password_correct
+
+    def login_form(self):
         """Form with widgets to collect user information"""
         with st.form("Credentials"):
             st.text_input("Username", key="username")
             st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=password_entered)
+            st.form_submit_button("Log in", on_click=self.password_entered)
 
-    def password_entered():
+    def password_entered(self):
         """Checks whether a password entered by the user is correct."""
-        if st.session_state["username"] in st.secrets[
-            "passwords"
-        ] and hmac.compare_digest(
+        if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
             st.session_state["password"],
             st.secrets.passwords[st.session_state["username"]],
         ):
             st.session_state["password_correct"] = True
+            self.password_correct = True
             del st.session_state["password"]  # Don't store the username or password.
             del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
-
-    # Return True if the username + password is validated.
-    if st.session_state.get("password_correct", False):
-        return True
-
-    # Show inputs for username + password.
-    login_form()
-    if "password_correct" in st.session_state:
-        st.error("😕 User not known or password incorrect")
-    return False
-
-
-if not check_password():
-    st.stop()
+            self.password_correct = False
 
 class StocksAnalyzerApp:
     def __init__(self):
+        self.auth = Authentication()
         self.today = datetime.date.today()
         self.start_date = self.today - datetime.timedelta(days=365)
         self.end_date = self.today
@@ -53,6 +54,8 @@ class StocksAnalyzerApp:
         self.ticker_symbol = None
 
     def run(self):
+        if not self.auth.check_password():
+            st.stop()
         self.display_app_title()
         self.display_date_inputs()
         self.select_ticker_symbol()
