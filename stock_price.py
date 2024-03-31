@@ -62,13 +62,27 @@ class StocksAnalyzerApp:
         self.retrieve_ticker_data()
         self.display_stock_information()
         self.display_financial_metrics()
-        self.display_bollinger_bands()
-        self.display_macd()
-        self.display_rsi()
-        self.display_analyst_ratings()
-        self.display_trading_volume_chart()
-        self.display_income_statement()
-        self.display_ticker_data()
+        
+        if st.button('Display Bollinger Bands'):
+            self.display_bollinger_bands()
+
+        if st.button('Display MACD'):
+            self.display_macd()
+
+        if st.button('Display RSI'):
+            self.display_rsi()
+
+        if st.button('Display Analyst Ratings'):
+            self.display_analyst_ratings()
+
+        if st.button('Display Trading Volume Chart'):
+            self.display_trading_volume_chart()
+
+        if st.button('Display Income Statement'):
+            self.display_income_statement()
+
+        if st.button('Display Ticker Data'):
+            self.display_ticker_data()
 
     def display_app_title(self):
         st.markdown('''
