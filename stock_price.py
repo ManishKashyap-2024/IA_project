@@ -16,13 +16,13 @@ class PasswordManager:
         """Returns `True` if the user had a correct password."""
 
         def login_form():
-                    """Form with widgets to collect user information"""
-                    with st.form("Credentials"):
-                        self.username = st.text_input("Username", key="username")
-                        self.password = st.text_input("Password", type="password", key="password")
-                        submit_button = st.form_submit_button("Log in")
-                        if submit_button:
-                            self.password_entered()
+            """Form with widgets to collect user information"""
+            with st.form("Credentials"):
+                self.username = st.text_input("Username", key="username")
+                self.password = st.text_input("Password", type="password", key="password")
+                submit_button = st.form_submit_button("Log in")
+                if submit_button:
+                    self.password_entered()
         
         def password_entered(self):
             """Checks whether a password entered by the user is correct."""
