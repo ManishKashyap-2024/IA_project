@@ -5,21 +5,36 @@ import cufflinks as cf
 import datetime
 import matplotlib.pyplot as plt
 import streamlit_authenticator as stauth
-
 import yaml
-from yaml.loader import SafeLoader
 
-with open('IA_project/cred.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
+# Load credentials from YAML file
 
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days']
-)
+with open("cred.yaml", "r") as file:
+    credentials = yaml.safe_load(file)
 
-authenticator.login()
+# Authentication component
+
+username = st.sidebar.text_input("Username")
+password = st.sidebar.text_input("Password", type="password")
+login_button = st.sidebar.button("Login")
+
+# Check authentication
+
+authenticated = False
+if login_button:
+    if username in credentials["usernames"]:
+        if password == credentials["usernames"][username]["password"]:
+            st.sidebar.success(f"Logged in successfully as {username}")
+            authenticated = True
+        else:
+            st.sidebar.error("Invalid password")
+    else:
+        st.sidebar.error("Invalid username")
+
+if not authenticated:
+    st.error("Please login to access the application.")
+    st.stop()
+
 
 class StocksAnalyzerApp:
     def __init__(self):
