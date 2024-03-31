@@ -6,6 +6,19 @@ import datetime
 import matplotlib.pyplot as plt
 import streamlit_authenticator as stauth
 
+import yaml
+from yaml.loader import SafeLoader
+
+with open('../cred.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
+
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
+
 
 class StocksAnalyzerApp:
     def __init__(self):
