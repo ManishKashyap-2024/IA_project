@@ -53,6 +53,13 @@ class StocksAnalyzerApp:
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.ticker_symbol = None
 
+    def initialize_state(self):
+        # Initialize state variables for each analysis button
+        analyses = ['stock_info', 'financial_metrics', 'bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
+        for analysis in analyses:
+            if analysis not in st.session_state:
+                st.session_state[analysis] = False
+
     def run(self):
         if not self.auth.check_password():
             st.stop()
@@ -62,26 +69,49 @@ class StocksAnalyzerApp:
         self.retrieve_ticker_data()
         self.display_stock_information()
         self.display_financial_metrics()
-        
+
         if st.button('Display Bollinger Bands'):
-            self.display_bollinger_bands()
+            st.session_state.bollinger_bands = True
 
         if st.button('Display MACD'):
-            self.display_macd()
+            st.session_state.macd = True
 
         if st.button('Display RSI'):
-            self.display_rsi()
+            st.session_state.rsi = True
 
         if st.button('Display Analyst Ratings'):
-            self.display_analyst_ratings()
+            st.session_state.analyst_ratings = True
 
         if st.button('Display Trading Volume Chart'):
-            self.display_trading_volume_chart()
+            st.session_state.trading_volume = True
 
         if st.button('Display Income Statement'):
-            self.display_income_statement()
+            st.session_state.income_statement = True
 
         if st.button('Display Ticker Data'):
+            st.session_state.ticker_data = True
+        
+        # Display content based on state
+        
+        if st.session_state.bollinger_bands:
+            self.display_bollinger_bands()
+
+        if st.session_state.macd:
+            self.display_macd()
+
+        if st.session_state.rsi:
+            self.display_rsi()
+
+        if st.session_state.analyst_ratings:
+            self.display_analyst_ratings()
+
+        if st.session_state.trading_volume:
+            self.display_trading_volume_chart()
+
+        if st.session_state.income_statement:
+            self.display_income_statement()
+
+        if st.session_state.ticker_data:
             self.display_ticker_data()
 
     def display_app_title(self):
