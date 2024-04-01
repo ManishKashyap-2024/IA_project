@@ -72,7 +72,7 @@ class StocksAnalyzerApp:
         self.display_stock_information()
         self.display_financial_metrics()
 
-        self.initialize_state()
+        self.initialize_state_variables()
 
         if st.button('Display Bollinger Bands'):
             st.session_state.bollinger_bands = True
