@@ -83,40 +83,39 @@ class StocksAnalyzerApp:
         if st.button('Display MACD'):
             st.session_state.macd = True
 
-        if st.button('Display RSI'):
-            st.session_state.rsi = True
-
-        if st.button('Display Analyst Ratings'):
-            st.session_state.analyst_ratings = True
-
-        if st.button('Display Trading Volume Chart'):
-            st.session_state.trading_volume = True
-
-        if st.button('Display Income Statement'):
-            st.session_state.income_statement = True
-
-        if st.button('Display Ticker Data'):
-            st.session_state.ticker_data = True
-        
-        # Display content based on state
-
         if st.session_state.macd:
             self.display_macd()
+
+        if st.button('Display RSI'):
+            st.session_state.rsi = True
 
         if st.session_state.rsi:
             self.display_rsi()
 
+        if st.button('Display Analyst Ratings'):
+            st.session_state.analyst_ratings = True
+
         if st.session_state.analyst_ratings:
             self.display_analyst_ratings()
+
+        if st.button('Display Trading Volume Chart'):
+            st.session_state.trading_volume = True
 
         if st.session_state.trading_volume:
             self.display_trading_volume_chart()
 
+        if st.button('Display Income Statement'):
+            st.session_state.income_statement = True
+
         if st.session_state.income_statement:
             self.display_income_statement()
 
+        if st.button('Display Ticker Data'):
+            st.session_state.ticker_data = True
+            
         if st.session_state.ticker_data:
             self.display_ticker_data()
+
 
     def display_app_title(self):
         st.markdown('''
