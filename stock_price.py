@@ -74,13 +74,13 @@ class StocksAnalyzerApp:
 
         self.initialize_state_variables()
 
-        if st.button('Display Bollinger Bands'):
+        if st.button('**Bollinger Bands**'):
             st.session_state.bollinger_bands = True
         
         if st.session_state.bollinger_bands:
                 self.display_bollinger_bands()
 
-        if st.button('Display MACD'):
+        if st.button('**MACD Chart**'):
             st.session_state.macd = True
 
         if st.session_state.macd:
