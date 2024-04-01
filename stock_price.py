@@ -55,7 +55,7 @@ class StocksAnalyzerApp:
 
     def initialize_state(self):
         # Initialize state variables for each analysis button
-        analyses = ['stock_info', 'financial_metrics', 'bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
+        analyses = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
         for analysis in analyses:
             if analysis not in st.session_state:
                 st.session_state[analysis] = False
