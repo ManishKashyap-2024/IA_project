@@ -76,6 +76,9 @@ class StocksAnalyzerApp:
 
         if st.button('Display Bollinger Bands'):
             st.session_state.bollinger_bands = True
+        
+        if st.session_state.bollinger_bands:
+                self.display_bollinger_bands()
 
         if st.button('Display MACD'):
             st.session_state.macd = True
@@ -96,9 +99,6 @@ class StocksAnalyzerApp:
             st.session_state.ticker_data = True
         
         # Display content based on state
-        
-        if st.session_state.bollinger_bands:
-            self.display_bollinger_bands()
 
         if st.session_state.macd:
             self.display_macd()
