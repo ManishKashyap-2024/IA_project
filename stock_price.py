@@ -19,7 +19,7 @@ class Authentication:
         self.login_form()
 
         if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-            st.error("😕 User not known or password incorrect")
+            st.error("User not known or password incorrect :( ")
 
         return self.password_correct
 
@@ -38,7 +38,7 @@ class Authentication:
         ):
             st.session_state["password_correct"] = True
             self.password_correct = True
-            del st.session_state["password"]  # Don't store the username or password.
+            del st.session_state["password"]  
             del st.session_state["username"]
         else:
             st.session_state["password_correct"] = False
@@ -53,12 +53,14 @@ class StocksAnalyzerApp:
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.ticker_symbol = None
 
-    def initialize_state(self):
-        # Initialize state variables for each analysis button
-        analyses = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
-        for analysis in analyses:
-            if analysis not in st.session_state:
-                st.session_state[analysis] = False
+    def initialize_state_variables(self):
+        # Define a list of all the analysis features 
+        features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
+        
+        # Initialize session state variables for each feature
+        for feature in features:
+            if feature not in st.session_state:
+                st.session_state[feature] = False
 
     def run(self):
         if not self.auth.check_password():
@@ -69,6 +71,8 @@ class StocksAnalyzerApp:
         self.retrieve_ticker_data()
         self.display_stock_information()
         self.display_financial_metrics()
+
+        self.initialize_state()
 
         if st.button('Display Bollinger Bands'):
             st.session_state.bollinger_bands = True
