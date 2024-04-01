@@ -74,7 +74,7 @@ class StocksAnalyzerApp:
 
         self.initialize_state_variables()
 
-        if st.button('**Bollinger Bands**'):
+        if st.button(st.header('**Bollinger Bands**')):
             st.session_state.bollinger_bands = True
         
         if st.session_state.bollinger_bands:
