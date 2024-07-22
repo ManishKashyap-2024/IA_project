@@ -2,5 +2,5 @@ streamlit
 pandas
 yfinance
 cufflinks
-matplotlib
+matplotlib==2.8.0
 streamlit-authenticator
