@@ -6,234 +6,227 @@ import datetime
 import matplotlib.pyplot as plt
 import hmac
 
-class Authentication:
+class UserAuth:
     def __init__(self):
-        self.password_correct = st.session_state.get("password_correct", False)
+        self.is_authenticated = st.session_state.get("is_authenticated", False)
 
-    def check_password(self):
-        """Returns `True` if the user had a correct password."""
-        if self.password_correct:
+    def validate_password(self):
+        """Checks if the user has provided the correct password."""
+        if self.is_authenticated:
             return True
 
-        # Show inputs for username + password.
-        self.login_form()
+        self.show_login_form()
 
-        if "password_correct" in st.session_state and not st.session_state["password_correct"]:
-            st.error("User not known or password incorrect :( ")
+        if "is_authenticated" in st.session_state and not st.session_state["is_authenticated"]:
+            st.error("Invalid username or password.")
 
-        return self.password_correct
+        return self.is_authenticated
 
-    def login_form(self):
-        """Form with widgets to collect user information"""
-        with st.form("Credentials"):
+    def show_login_form(self):
+        """Displays the login form for user authentication."""
+        with st.form("Login Form"):
             st.text_input("Username", key="username")
             st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=self.password_entered)
+            st.form_submit_button("Log in", on_click=self.verify_password)
 
-    def password_entered(self):
-        """Checks whether a password entered by the user is correct."""
+    def verify_password(self):
+        """Verifies the password entered by the user."""
         if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
             st.session_state["password"],
             st.secrets.passwords[st.session_state["username"]],
         ):
-            st.session_state["password_correct"] = True
-            self.password_correct = True
+            st.session_state["is_authenticated"] = True
+            self.is_authenticated = True
             del st.session_state["password"]  
             del st.session_state["username"]
         else:
-            st.session_state["password_correct"] = False
-            self.password_correct = False
+            st.session_state["is_authenticated"] = False
+            self.is_authenticated = False
 
-class StocksAnalyzerApp:
+class StockAnalysisApp:
     def __init__(self):
-        self.auth = Authentication()
+        self.auth = UserAuth()
         self.today = datetime.date.today()
         self.start_date = self.today - datetime.timedelta(days=365)
         self.end_date = self.today
         self.ticker_list = pd.read_csv('stock_list.txt')
-        self.ticker_symbol = None
+        self.selected_ticker = None
 
-    def initialize_state_variables(self):
-        # Define a list of all the analysis features 
+    def init_state_variables(self):
+        # Initialize session state variables for each analysis feature
         features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
-        
-        # Initialize session state variables for each feature
         for feature in features:
             if feature not in st.session_state:
                 st.session_state[feature] = False
 
     def run(self):
-        if not self.auth.check_password():
+        if not self.auth.validate_password():
             st.stop()
-        self.display_app_title()
-        self.display_date_inputs()
-        self.select_ticker_symbol()
-        self.retrieve_ticker_data()
-        self.display_stock_information()
-        self.display_financial_metrics()
+        self.show_app_title()
+        self.set_date_inputs()
+        self.choose_ticker()
+        self.fetch_ticker_data()
+        self.show_stock_info()
+        self.show_financial_metrics()
 
-        self.initialize_state_variables()
+        self.init_state_variables()
 
-        if st.button('**Bollinger Bands**'):
+        if st.button('Show Bollinger Bands'):
             st.session_state.bollinger_bands = True
         
         if st.session_state.bollinger_bands:
-                self.display_bollinger_bands()
+            self.show_bollinger_bands()
 
-        if st.button('**MACD Chart**'):
+        if st.button('Show MACD Chart'):
             st.session_state.macd = True
 
         if st.session_state.macd:
-            self.display_macd()
+            self.show_macd()
 
-        if st.button('Display RSI'):
+        if st.button('Show RSI'):
             st.session_state.rsi = True
 
         if st.session_state.rsi:
-            self.display_rsi()
+            self.show_rsi()
 
-        if st.button('Display Analyst Ratings'):
+        if st.button('Show Analyst Ratings'):
             st.session_state.analyst_ratings = True
 
         if st.session_state.analyst_ratings:
-            self.display_analyst_ratings()
+            self.show_analyst_ratings()
 
-        if st.button('Display Trading Volume Chart'):
+        if st.button('Show Trading Volume Chart'):
             st.session_state.trading_volume = True
 
         if st.session_state.trading_volume:
-            self.display_trading_volume_chart()
+            self.show_trading_volume_chart()
 
-        if st.button('Display Income Statement'):
+        if st.button('Show Income Statement'):
             st.session_state.income_statement = True
 
         if st.session_state.income_statement:
-            self.display_income_statement()
+            self.show_income_statement()
 
-        if st.button('Display Ticker Data'):
+        if st.button('Show Ticker Data'):
             st.session_state.ticker_data = True
             
         if st.session_state.ticker_data:
-            self.display_ticker_data()
+            self.show_ticker_data()
 
-
-    def display_app_title(self):
+    def show_app_title(self):
         st.markdown('''
-        # Stocks Analyzer App
-        Get all important insights on yours Stocks! 
+        # Stock Analysis Application
+        Get all the essential insights on your selected stocks!
         ''')
         st.write('---')
 
-    def display_date_inputs(self):
-        self.start_date = st.sidebar.date_input("Start date", self.start_date)
-        self.end_date = st.sidebar.date_input("End date", self.end_date)
+    def set_date_inputs(self):
+        self.start_date = st.sidebar.date_input("Start Date", self.start_date)
+        self.end_date = st.sidebar.date_input("End Date", self.end_date)
 
-    def select_ticker_symbol(self):
-        self.ticker_symbol = st.sidebar.selectbox('Stock ticker', self.ticker_list)
+    def choose_ticker(self):
+        self.selected_ticker = st.sidebar.selectbox('Stock Ticker', self.ticker_list)
 
-    def retrieve_ticker_data(self):
-        self.ticker_data = yf.Ticker(self.ticker_symbol)
-        self.ticker_df = self.ticker_data.history(period='1d', start=self.start_date, end=self.end_date)
-        self.ticker_df_sorted = self.ticker_df.sort_index(ascending=False)
+    def fetch_ticker_data(self):
+        self.ticker_info = yf.Ticker(self.selected_ticker)
+        self.ticker_history = self.ticker_info.history(period='1d', start=self.start_date, end=self.end_date)
+        self.sorted_ticker_history = self.ticker_history.sort_index(ascending=False)
 
-    def display_stock_information(self):
-        string_name = self.ticker_data.info['longName']
-        st.header(f'**{string_name}**')
+    def show_stock_info(self):
+        stock_name = self.ticker_info.info['longName']
+        st.header(f'**{stock_name}**')
 
-        string_summary = self.ticker_data.info['longBusinessSummary']
-        st.info(string_summary)
+        stock_summary = self.ticker_info.info['longBusinessSummary']
+        st.info(stock_summary)
 
-        asset_profile = self.ticker_data.info.get('assetProfile', {})
+        asset_profile = self.ticker_info.info.get('assetProfile', {})
         if asset_profile:
-            st.subheader(f'Asset Profile for {self.ticker_symbol}')
+            st.subheader(f'Asset Profile for {self.selected_ticker}')
             for key, value in asset_profile.items():
                 st.text(f'{key}: {value}')
         else:
             st.write("Asset profile information is not available.")
 
-    def display_financial_metrics(self):
+    def show_financial_metrics(self):
         st.header('**Financial Metrics**')
         metrics = {
-            "Metric": ["Latest Price", "Previous Closing Price", "52 Week High Price", "52 Week Low Price",
-                       "Trailing Price to Earnings Ratio", "Beta ratio: volatility indicator",
-                       "PEG Ratio", "Forward P/E Ratio"],
+            "Metric": ["Latest Price", "Previous Close", "52 Week High", "52 Week Low",
+                       "Trailing P/E Ratio", "Beta", "PEG Ratio", "Forward P/E Ratio"],
             "Value": [
-                self.ticker_data.info.get('regularMarketPrice', 'Not available'),
-                self.ticker_data.info.get('previousClose', None),
-                self.ticker_data.info.get('fiftyTwoWeekHigh', 'N/A'),
-                self.ticker_data.info.get('fiftyTwoWeekLow', 'N/A'),
-                self.ticker_data.info.get('trailingPE', 'N/A'),
-                self.ticker_data.info.get('beta', 'N/A'),
-                self.ticker_data.info.get('pegRatio', 'N/A'),
-                self.ticker_data.info.get('forwardPE', 'N/A')
+                self.ticker_info.info.get('regularMarketPrice', 'N/A'),
+                self.ticker_info.info.get('previousClose', 'N/A'),
+                self.ticker_info.info.get('fiftyTwoWeekHigh', 'N/A'),
+                self.ticker_info.info.get('fiftyTwoWeekLow', 'N/A'),
+                self.ticker_info.info.get('trailingPE', 'N/A'),
+                self.ticker_info.info.get('beta', 'N/A'),
+                self.ticker_info.info.get('pegRatio', 'N/A'),
+                self.ticker_info.info.get('forwardPE', 'N/A')
             ]
         }
         metrics_df = pd.DataFrame(metrics)
         st.table(metrics_df)
 
-    def display_bollinger_bands(self):
+    def show_bollinger_bands(self):
         st.header('**Bollinger Bands**')
         st.markdown('''
-        Bollinger Bands are a technical indicator that help traders determine entry and exit points for a trade. They can help traders identify overbought and oversold conditions. 
-        When the price of the asset breaks below the lower band of the Bollinger Bands®, prices have perhaps fallen too much and are due to bounce. On the other hand, when price breaks above the upper band, the market is perhaps overbought and due for a pullback.
+        Bollinger Bands help traders identify entry and exit points for a trade. They indicate overbought and oversold conditions. 
+        When the price falls below the lower band, it may be a sign of oversold conditions and a potential bounce. When the price rises above the upper band, it may indicate overbought conditions and a potential pullback.
         ''')
-        qf = cf.QuantFig(self.ticker_df, title='First Quant Figure', legend='top', name=self.ticker_symbol)
-        qf.add_bollinger_bands()
-        fig = qf.iplot(asFigure=True)
+        quant_fig = cf.QuantFig(self.ticker_history, title='Bollinger Bands Chart', legend='top', name=self.selected_ticker)
+        quant_fig.add_bollinger_bands()
+        fig = quant_fig.iplot(asFigure=True)
         st.plotly_chart(fig)
 
-    def display_macd(self):
-        st.header('**Moving Average Convergence Divergence (MACD)**')
+    def show_macd(self):
+        st.header('**MACD (Moving Average Convergence Divergence)**')
         st.markdown('''
-        The Moving Average Convergence Divergence (MACD) is a trend-following momentum indicator that shows the relationship between two moving averages of a security’s price. The MACD is calculated by subtracting the 26-period Exponential Moving Average (EMA) from the 12-period EMA. 
-        A 9-day EMA of the MACD, called the "signal line," is then plotted on top of the MACD line, which can function as a trigger for buy and sell signals.
-        Traders might consider buying when the MACD line crosses above the signal line (bullish crossover) and selling or shorting when the MACD line crosses below the signal line (bearish crossover).
+        The MACD is a momentum indicator that shows the relationship between two moving averages of a stock’s price. The MACD is calculated by subtracting the 26-period EMA from the 12-period EMA. 
+        A 9-day EMA of the MACD, called the "signal line," is plotted on top of the MACD line, indicating buy and sell signals.
+        Traders might buy when the MACD crosses above the signal line (bullish) and sell when it crosses below the signal line (bearish).
         ''')
-        qf_macd = cf.QuantFig(self.ticker_df, title="MACD", legend='top', name=self.ticker_symbol)
-        qf_macd.add_macd()
-        figure = qf_macd.iplot(asFigure=True)
-        st.plotly_chart(figure)
+        quant_fig_macd = cf.QuantFig(self.ticker_history, title="MACD Chart", legend='top', name=self.selected_ticker)
+        quant_fig_macd.add_macd()
+        fig_macd = quant_fig_macd.iplot(asFigure=True)
+        st.plotly_chart(fig_macd)
 
-    def display_rsi(self):
-        st.header('**Relative Strength Index**')
+    def show_rsi(self):
+        st.header('**Relative Strength Index (RSI)**')
         st.markdown('''
-        The RSI is calculated based on average price gains and losses over a specified period. 
-        The RSI is most commonly used to identify potential overbought or oversold conditions in a market. An RSI above 70 is typically considered overbought, while an RSI below 30 is considered oversold.
-        The RSI value of 50 acts as a centerline between bullish and bearish territories.
+        The RSI is a momentum oscillator that measures the speed and change of price movements. It ranges from 0 to 100. An RSI above 70 is considered overbought, while an RSI below 30 is considered oversold.
         ''')
-        qf_rsi = cf.QuantFig(self.ticker_df, title="RSI", legend='top', name=self.ticker_symbol)
-        qf_rsi.add_rsi(periods=14, showbands=False)
-        figure_rsi = qf_rsi.iplot(asFigure=True)
-        st.plotly_chart(figure_rsi)
+        quant_fig_rsi = cf.QuantFig(self.ticker_history, title="RSI Chart", legend='top', name=self.selected_ticker)
+        quant_fig_rsi.add_rsi(periods=14, showbands=False)
+        fig_rsi = quant_fig_rsi.iplot(asFigure=True)
+        st.plotly_chart(fig_rsi)
 
-    def display_analyst_ratings(self):
-        st.header('**Analyst Rating**')
-        analyst_ratings = self.ticker_data.recommendations
-        if analyst_ratings is not None and not analyst_ratings.empty:
-            st.write("### Most Recent Analyst Ratings", analyst_ratings.tail(10))
+    def show_analyst_ratings(self):
+        st.header('**Analyst Ratings**')
+        recommendations = self.ticker_info.recommendations
+        if recommendations is not None and not recommendations.empty:
+            st.write("### Latest Analyst Ratings", recommendations.tail(10))
         else:
-            st.write("No analyst ratings data available.")
+            st.write("No analyst ratings available.")
 
-    def display_trading_volume_chart(self):
-        st.header('Trading Volume')
-        fig2 = self.ticker_df['Volume'].iplot(asFigure=True, kind='bar', xTitle='Date', yTitle='Volume',
-                                               title='Trading Volume', theme='pearl')
-        st.plotly_chart(fig2, use_container_width=True)
+    def show_trading_volume_chart(self):
+        st.header('**Trading Volume**')
+        volume_chart = self.ticker_history['Volume'].iplot(asFigure=True, kind='bar', xTitle='Date', yTitle='Volume',
+                                                           title='Trading Volume', theme='pearl')
+        st.plotly_chart(volume_chart, use_container_width=True)
 
-    def display_income_statement(self):
-        annual_income_statement = self.ticker_data.financials
-        quarterly_income_statement = self.ticker_data.quarterly_financials
+    def show_income_statement(self):
+        annual_income = self.ticker_info.financials
+        quarterly_income = self.ticker_info.quarterly_financials
 
-        st.write("### Annual Income Statement", annual_income_statement)
-        st.write("### Quarterly Income Statement", quarterly_income_statement)
+        st.write("### Annual Income Statement", annual_income)
+        st.write("### Quarterly Income Statement", quarterly_income)
 
-    def display_ticker_data(self):
-        st.header('**Ticker data**')
-        st.write(self.ticker_df_sorted)
+    def show_ticker_data(self):
+        st.header('**Ticker Data**')
+        st.write(self.sorted_ticker_history)
 
-        st.markdown('Stock Price App built by *Manish Ranjan Kashyap*')
+        st.markdown('Stock Analysis App by *Your Name*')
         st.write('---')
 
 if __name__ == "__main__":
-    app = StocksAnalyzerApp()
+    app = StockAnalysisApp()
     app.run()
