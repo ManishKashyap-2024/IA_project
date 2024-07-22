@@ -7,4 +7,3 @@
 2. Launch the app
 
 `streamlit run stock_price.py`
-‸
