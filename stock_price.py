@@ -180,7 +180,6 @@ class StocksAnalyzerApp:
         qf = cf.QuantFig(self.ticker_df, title='First Quant Figure', legend='top', name=self.ticker_symbol)
         qf.add_bollinger_bands()
         fig = qf.iplot(asFigure=True)
-        fig.update_traces(line=dict(color='#FF9933'))
         st.plotly_chart(fig)
 
     def display_macd(self):
