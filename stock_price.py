@@ -11,7 +11,7 @@ class UserAuth:
         self.is_authenticated = st.session_state.get("is_authenticated", False)
 
     def validate_password(self):
-        """Checks if the user has provided the correct password."""
+        """This part checks if the user has put in the correct password."""
         if self.is_authenticated:
             return True
 
@@ -23,14 +23,14 @@ class UserAuth:
         return self.is_authenticated
 
     def show_login_form(self):
-        """Displays the login form for user authentication."""
+        """This part shows the login form to the user for authentication purpose."""
         with st.form("Login Form"):
             st.text_input("Username", key="username")
             st.text_input("Password", type="password", key="password")
             st.form_submit_button("Log in", on_click=self.verify_password)
 
     def verify_password(self):
-        """Verifies the password entered by the user."""
+        """This part verifies the password entered."""
         if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
             st.session_state["password"],
             st.secrets.passwords[st.session_state["username"]],
@@ -53,7 +53,7 @@ class StockAnalysisApp:
         self.selected_ticker = None
 
     def init_state_variables(self):
-        # Initialize session state variables for each analysis feature
+        # Initialize session state variables for each feature
         features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
         for feature in features:
             if feature not in st.session_state:
@@ -116,7 +116,7 @@ class StockAnalysisApp:
     def show_app_title(self):
         st.markdown('''
         # Stock Analysis Application
-        Get all the essential insights on your selected stocks!
+        One-stop shop for getting the key insights on your selected stocks at your fingertips!
         ''')
         st.write('---')
 
@@ -150,8 +150,8 @@ class StockAnalysisApp:
     def show_financial_metrics(self):
         st.header('**Financial Metrics**')
         metrics = {
-            "Metric": ["Latest Price", "Previous Close", "52 Week High", "52 Week Low",
-                       "Trailing P/E Ratio", "Beta", "PEG Ratio", "Forward P/E Ratio"],
+            "Metric": ["Current Price", "Previous Close", "Highest in 52 wks", "Lowest in 52 wks",
+                       "PE Ratio", "Beta", "PEG Ratio", "Forward PE Ratio"],
             "Value": [
                 self.ticker_info.info.get('regularMarketPrice', 'N/A'),
                 self.ticker_info.info.get('previousClose', 'N/A'),
@@ -169,8 +169,8 @@ class StockAnalysisApp:
     def show_bollinger_bands(self):
         st.header('**Bollinger Bands**')
         st.markdown('''
-        Bollinger Bands help traders identify entry and exit points for a trade. They indicate overbought and oversold conditions. 
-        When the price falls below the lower band, it may be a sign of oversold conditions and a potential bounce. When the price rises above the upper band, it may indicate overbought conditions and a potential pullback.
+        Bollinger Bands are one of the useful tools in stock analysis to decide when to buy or sell a stock. They show if the stock is priced too high or too low. If the stock price falls below the lower band, it might mean the stock is too cheap and could go up soon. 
+        If the price rises above the upper band, it might mean the stock is too expensive and could drop in price.
         ''')
         quant_fig = cf.QuantFig(self.ticker_history, title='Bollinger Bands Chart', legend='top', name=self.selected_ticker)
         quant_fig.add_bollinger_bands()
@@ -180,9 +180,10 @@ class StockAnalysisApp:
     def show_macd(self):
         st.header('**MACD (Moving Average Convergence Divergence)**')
         st.markdown('''
-        The MACD is a momentum indicator that shows the relationship between two moving averages of a stock’s price. The MACD is calculated by subtracting the 26-period EMA from the 12-period EMA. 
-        A 9-day EMA of the MACD, called the "signal line," is plotted on top of the MACD line, indicating buy and sell signals.
-        Traders might buy when the MACD crosses above the signal line (bullish) and sell when it crosses below the signal line (bearish).
+        The Moving Average Convergence Divergence (MACD) is a tool that helps investors know when to buy or sell stocks. 
+        To get the MACD line, subtract the 26-day Exponential Moving Average (EMA) from the 12-day EMA. Then, the signal line is made by taking a 9-day EMA of the MACD line.
+        When the MACD line crosses above the signal line, it means that the price might go up potentially. 
+        And when the MACD line goes below the signal line, it means that the price may potentially go down and traders can sell the stock.
         ''')
         quant_fig_macd = cf.QuantFig(self.ticker_history, title="MACD Chart", legend='top', name=self.selected_ticker)
         quant_fig_macd.add_macd()
@@ -192,7 +193,9 @@ class StockAnalysisApp:
     def show_rsi(self):
         st.header('**Relative Strength Index (RSI)**')
         st.markdown('''
-        The RSI is a momentum oscillator that measures the speed and change of price movements. It ranges from 0 to 100. An RSI above 70 is considered overbought, while an RSI below 30 is considered oversold.
+        The RSI is a tool that tracks how fast and how much prices change. It has a scale from 0 to 100. 
+        If the RSI goes above 70, it means that the stock may be overpriced which happens when it is overbought. 
+        If the RSI is below 30, it means that the stock price may be too low or oversold.
         ''')
         quant_fig_rsi = cf.QuantFig(self.ticker_history, title="RSI Chart", legend='top', name=self.selected_ticker)
         quant_fig_rsi.add_rsi(periods=14, showbands=False)
