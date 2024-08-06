@@ -150,10 +150,9 @@ class StockAnalysisApp:
     def show_financial_metrics(self):
         st.header('**Financial Metrics**')
         metrics = {
-            "Metric": ["Current Price", "Previous Close", "Highest in 52 wks", "Lowest in 52 wks",
+            "Metric": ["Previous Close", "Highest in 52 wks", "Lowest in 52 wks",
                        "PE Ratio", "Beta", "PEG Ratio", "Forward PE Ratio"],
             "Value": [
-                self.ticker_info.info.get('regularMarketPrice', 'N/A'),
                 self.ticker_info.info.get('previousClose', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekHigh', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekLow', 'N/A'),
