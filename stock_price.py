@@ -6,27 +6,42 @@ import datetime
 import matplotlib.pyplot as plt
 import hmac
 
-from streamlit_login_auth_ui.widgets import __login__
+class UserAuth:
+    def __init__(self):
+        self.is_authenticated = st.session_state.get("is_authenticated", False)
 
-class LoginManager:
-    def __init__(self, company_name, width=200, height=250, 
-                 logout_button_name='Logout', hide_menu_bool=True, 
-                 hide_footer_bool=True):
-        # Retrieve auth_token from Streamlit's secrets
-        self.auth_token = st.secrets["general"]["auth_token"]
-        self.login_widget = __login__(
-            auth_token=self.auth_token,
-            company_name="manishranjankashyap",
-            width=width,
-            height=height,
-            logout_button_name=logout_button_name,
-            hide_menu_bool=hide_menu_bool,
-            hide_footer_bool=hide_footer_bool,
-        )
+    def validate_password(self):
+        """This part checks if the user has put in the correct password."""
+        if self.is_authenticated:
+            return True
 
-def authenticate(self):
-        # Build the login UI and return the authentication status
-        return self.login_widget.build_login_ui()
+        self.show_login_form()
+
+        if "is_authenticated" in st.session_state and not st.session_state["is_authenticated"]:
+            st.error("Invalid username or password.")
+
+        return self.is_authenticated
+
+    def show_login_form(self):
+        """This part shows the login form to the user for authentication purpose."""
+        with st.form("Login Form"):
+            st.text_input("Username", key="username")
+            st.text_input("Password", type="password", key="password")
+            st.form_submit_button("Log in", on_click=self.verify_password)
+
+    def verify_password(self):
+        """This part verifies the password entered."""
+        if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
+            st.session_state["password"],
+            st.secrets.passwords[st.session_state["username"]],
+        ):
+            st.session_state["is_authenticated"] = True
+            self.is_authenticated = True
+            del st.session_state["password"]  
+            del st.session_state["username"]
+        else:
+            st.session_state["is_authenticated"] = False
+            self.is_authenticated = False
 
 class StockAnalysisApp:
     def __init__(self):
@@ -45,12 +60,8 @@ class StockAnalysisApp:
                 st.session_state[feature] = False
 
     def run(self):
-        
-        # Use the LoginManager to handle authentication
-        if not self.login_manager.authenticate():
+        if not self.auth.validate_password():
             st.stop()
-
-        
         self.show_app_title()
         self.set_date_inputs()
         self.choose_ticker()
