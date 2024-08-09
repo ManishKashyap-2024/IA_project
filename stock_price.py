@@ -16,7 +16,7 @@ class LoginManager:
         self.auth_token = st.secrets["general"]["auth_token"]
         self.login_widget = __login__(
             auth_token=self.auth_token,
-            company_name="manishranjankashyap,
+            company_name="manishranjankashyap",
             width=width,
             height=height,
             logout_button_name=logout_button_name,
