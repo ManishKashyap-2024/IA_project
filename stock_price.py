@@ -14,26 +14,13 @@ from supabase import create_client, Client
 supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
 
 def create_users_table():
-    """Create the users table in Supabase if it doesn't exist."""
+    """Ensure the users table exists in Supabase."""
     try:
         # Check if the table exists by trying to select from it
         result = supabase.table("users").select("*").limit(1).execute()
+        st.write("Users table is ready.")
     except Exception as e:
-        # If it does not exist, create it
-        if '42P01' in str(e):  # '42P01' is the error code for a missing table in PostgreSQL
-            query = """
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE,
-                email TEXT UNIQUE,
-                dob TEXT,
-                password TEXT
-            );
-            """
-            supabase.rpc("execute_sql", {"query": query}).execute()
-            st.write("Users table has been created.")
-        else:
-            st.error(f"Error creating users table: {e}")
+        st.error(f"Error ensuring users table exists: {e}")
 
 create_users_table()
 
@@ -452,4 +439,3 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
-
