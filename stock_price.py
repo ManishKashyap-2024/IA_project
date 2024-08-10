@@ -206,10 +206,6 @@ class UserAuth:
 
     def admin_view_all_users(self):
         """Allow the admin to view all users in the database."""
-        if not self.is_admin:
-            st.error("Unauthorized access.")
-            return
-
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute('SELECT * FROM users')
@@ -251,7 +247,7 @@ class StockAnalysisApp:
 
         # Admin view to see all users
         if self.auth.is_admin:
-            self.auth.admin_view_all_users()
+            self.show_admin_sidebar()
 
         # Set date inputs for the stock data
         self.set_date_inputs()
@@ -313,6 +309,12 @@ class StockAnalysisApp:
             
         if st.session_state.ticker_data:
             self.show_ticker_data()
+
+    def show_admin_sidebar(self):
+        st.sidebar.title("Admin Dashboard")
+        st.sidebar.write("Welcome, Admin!")
+        if st.sidebar.button("View All Users"):
+            self.auth.admin_view_all_users()
 
     def show_app_title(self):
         st.markdown('''
