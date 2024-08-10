@@ -9,6 +9,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from supabase import create_client, Client
+from st_supabase_connection import SupabaseConnection
+
+# Initialize connection.
+conn = st.connection("supabase",type=SupabaseConnection)
 
 # Initialize Supabase client
 supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
