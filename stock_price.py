@@ -163,6 +163,9 @@ class UserAuth:
     def add_user(self, username, email, dob, password):
         """ Add a new user to the database."""
         try:
+            hashed_password = self.hash_password(password)
+            
+            # Insert the new user
             query = '''
                 INSERT INTO users (username, email, dob, password)
                 VALUES (:username, :email, :dob, :password);
@@ -171,20 +174,23 @@ class UserAuth:
                 'username': username,
                 'email': email,
                 'dob': dob,
-                'password': self.hash_password(password)
+                'password': hashed_password
             })
             conn.session.commit()
     
-            # Verify that the user has been added
+            # Display the added user
             user_check = conn.session.execute("SELECT * FROM users WHERE username = :username", {'username': username}).fetchone()
+            
+            st.write(f"Inserted user: {user_check}")
+            
             if user_check:
                 st.success("User registered successfully!")
-                st.write(f"New user added: {user_check}")
                 self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
             else:
                 st.error("User registration failed.")
         except Exception as e:
-            st.error(f"An error occurred during registration: {e}")
+            st.error(f"An error occurred: {e}")
+
 
     def show_reset_password_form(self):
         """ Show the form to reset the password."""
