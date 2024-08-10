@@ -14,19 +14,24 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
 conn = st.connection('user_db', type='sql')
 
 # Create users table if it doesn't exist
-with conn.session as s:
-    s.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            email TEXT UNIQUE,
-            dob TEXT,
-            password TEXT
-        );
-    ''')
-    s.commit()
+def create_users_table():
+    try:
+        with conn.session as s:
+            s.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE,
+                    email TEXT UNIQUE,
+                    dob TEXT,
+                    password TEXT
+                );
+            ''')
+            s.commit()
+        st.write("Users table has been created.")
+    except Exception as e:
+        st.error(f"Error creating users table: {e}")
 
-st.write("Users table has been created.")
+create_users_table()
 
 class UserAuth:
     def __init__(self):
