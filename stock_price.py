@@ -13,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 # Function to connect to the SQLite database
 def get_db_connection():
     conn = sqlite3.connect('users.db')
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row  # Access rows as dictionaries
     return conn
 
 # Function to create the users table if it doesn't exist
@@ -38,8 +38,10 @@ create_user_table()
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
-        self.admin_email = st.secrets["admin_email"]  # Store admin email in secrets.toml
-        self.admin_password = st.secrets["admin_password"]  # Store admin password in secrets.toml
+        self.is_admin = st.session_state.get("is_admin", False)
+        self.admin_email = st.secrets["admin_email"]
+        self.admin_password = st.secrets["admin_password"]
+        self.admin_user_id = st.secrets["admin_user_id"]  # Read admin User ID from secrets
 
     def hash_password(self, password):
         """Hash a password using SHA256."""
@@ -55,7 +57,7 @@ class UserAuth:
         msg.attach(MIMEText(body, 'plain'))
 
         try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)  # Use Gmail's SMTP server
+            server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(self.admin_email, self.admin_password)
             text = msg.as_string()
@@ -94,9 +96,11 @@ class UserAuth:
         password = st.session_state.get("password")
 
         # Admin login case
-        if username == "admin" and hmac.compare_digest(password, self.admin_password):
+        if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
             st.session_state["is_authenticated"] = True
+            st.session_state["is_admin"] = True
             self.is_authenticated = True
+            self.is_admin = True
             return
 
         # User login case
@@ -200,6 +204,22 @@ class UserAuth:
         else:
             st.error("No user found with the given Date of Birth.")
 
+    def admin_view_all_users(self):
+        """Allow the admin to view all users in the database."""
+        if not self.is_admin:
+            st.error("Unauthorized access.")
+            return
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM users')
+        users = cur.fetchall()
+        conn.close()
+
+        st.write("Current Users in the Database:")
+        for user in users:
+            st.write(dict(user))
+
 class StockAnalysisApp:
     def __init__(self):
         # Initialize UserAuth for handling authentication
@@ -228,6 +248,10 @@ class StockAnalysisApp:
 
         # Show the app title after successful login
         self.show_app_title()
+
+        # Admin view to see all users
+        if self.auth.is_admin:
+            self.auth.admin_view_all_users()
 
         # Set date inputs for the stock data
         self.set_date_inputs()
