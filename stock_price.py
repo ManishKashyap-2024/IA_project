@@ -16,17 +16,24 @@ supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supa
 def create_users_table():
     """Create the users table in Supabase if it doesn't exist."""
     try:
-        existing_tables = supabase.table("users").select("*").execute()
-        if not existing_tables.data:
-            # Create the table if it does not exist
-            supabase.table("users").insert([
-                {"username": "sample_user", "email": "sample@example.com", "dob": "010190", "password": "hashed_password"}
-            ]).execute()
-            # Delete the sample entry to keep the table clean
-            supabase.table("users").delete().eq("username", "sample_user").execute()
-        st.write("Supabase users table is ready.")
+        # Check if the table exists by trying to select from it
+        result = supabase.table("users").select("*").limit(1).execute()
     except Exception as e:
-        st.error(f"Error ensuring users table exists: {e}")
+        # If it does not exist, create it
+        if '42P01' in str(e):  # '42P01' is the error code for a missing table in PostgreSQL
+            query = """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE,
+                email TEXT UNIQUE,
+                dob TEXT,
+                password TEXT
+            );
+            """
+            supabase.rpc("execute_sql", {"query": query}).execute()
+            st.write("Users table has been created.")
+        else:
+            st.error(f"Error creating users table: {e}")
 
 create_users_table()
 
@@ -35,7 +42,7 @@ class UserAuth:
         self.is_authenticated = st.session_state.get("is_authenticated", False)
         self.is_admin_authenticated = st.session_state.get("is_admin_authenticated", False)
         self.admin_email = st.secrets["admin"]["email"]
-        self.admin_password = st.secrets["admin"]["password"]
+        self.admin_password_hash = self.hash_password(st.secrets["admin"]["password"])  # Store the hash of the admin password
         self.admin_user_id = st.secrets["admin"]["user_id"]
 
     def hash_password(self, password):
@@ -54,7 +61,7 @@ class UserAuth:
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
-            server.login(self.admin_email, self.admin_password)
+            server.login(self.admin_email, st.secrets["admin"]["password"])
             text = msg.as_string()
             server.sendmail(self.admin_email, to_email, text)
             server.quit()
@@ -114,7 +121,7 @@ class UserAuth:
         username = st.session_state.get("username")
         password = st.session_state.get("password")
 
-        if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
+        if username == self.admin_user_id and hmac.compare_digest(self.hash_password(password), self.admin_password_hash):
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
             st.session_state["is_admin_authenticated"] = False
@@ -141,12 +148,13 @@ class UserAuth:
         admin_username = st.session_state.get("admin_username")
         admin_password = st.session_state.get("admin_password")
 
-        if admin_username == self.admin_user_id and hmac.compare_digest(self.hash_password(admin_password), self.admin_password):
+        if admin_username == self.admin_user_id and hmac.compare_digest(self.hash_password(admin_password), self.admin_password_hash):
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
             st.session_state["is_authenticated"] = False
             self.is_authenticated = False
         else:
+            st.error("Invalid Admin ID or password.")
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
 
@@ -255,14 +263,12 @@ class StockAnalysisApp:
         self.selected_ticker = None
 
     def init_state_variables(self):
-        # Initialize session state variables for each feature
         features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
         for feature in features:
             if feature not in st.session_state:
                 st.session_state[feature] = False
 
     def run(self):
-        # Only show tabs if no one is authenticated
         if not st.session_state.get("is_authenticated") and not st.session_state.get("is_admin_authenticated"):
             tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
@@ -432,3 +438,4 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
+
