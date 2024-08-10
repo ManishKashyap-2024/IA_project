@@ -70,7 +70,7 @@ class UserAuth:
     def verify_admin_password(self):
         """Check admin credentials."""
         # Admin credential verification logic
-        if st.session_state["admin_username"] == st.secrets["admin_id"] and st.session_state["admin_password"] == st.secrets["admin_password"]:
+        if st.session_state["admin_username"] == st.secrets["admin"]["admin_id"] and st.session_state["admin"]["admin_password"] == st.secrets["admin_password"]:
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
         else:
