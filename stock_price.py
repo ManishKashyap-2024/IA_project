@@ -117,10 +117,17 @@ class UserAuth:
             query = "SELECT password FROM users WHERE username = :username"
             result = conn.session.execute(query, {'username': username}).fetchone()
 
-            if result and hmac.compare_digest(self.hash_password(password), result.password):
-                st.session_state["is_authenticated"] = True
-                self.is_authenticated = True
+            if result:
+                st.write(f"Password hash stored in DB: {result.password}")
+                if hmac.compare_digest(self.hash_password(password), result.password):
+                    st.session_state["is_authenticated"] = True
+                    self.is_authenticated = True
+                else:
+                    st.error("Password mismatch.")
+                    st.session_state["is_authenticated"] = False
+                    self.is_authenticated = False
             else:
+                st.error("Username not found in database.")
                 st.session_state["is_authenticated"] = False
                 self.is_authenticated = False
 
@@ -172,12 +179,12 @@ class UserAuth:
             user_check = conn.session.execute("SELECT * FROM users WHERE username = :username", {'username': username}).fetchone()
             if user_check:
                 st.success("User registered successfully!")
+                st.write(f"New user added: {user_check}")
                 self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
             else:
                 st.error("User registration failed.")
         except Exception as e:
-            st.error(f"An error occurred: {e}")
-
+            st.error(f"An error occurred during registration: {e}")
 
     def show_reset_password_form(self):
         """ Show the form to reset the password."""
@@ -242,7 +249,6 @@ class UserAuth:
                 st.write(f"Username: {user.username}, Email: {user.email}, DOB: {user.dob}")
         else:
             st.warning("No users found in the database.")
-
 
     def admin_dashboard(self):
         """Show the admin dashboard in the sidebar."""
