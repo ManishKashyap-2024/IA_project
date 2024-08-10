@@ -13,6 +13,11 @@ from st_supabase_connection import SupabaseConnection
 # Initialize connection.
 conn = st.connection("supabase", type=SupabaseConnection)
 
+# Initialize Supabase client using the correct path to secrets
+url = st.secrets["connections"]["supabase"]["SUPABASE_URL"]
+key = st.secrets["connections"]["supabase"]["SUPABASE_KEY"]
+supabase: Client = create_client(url, key)
+
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
