@@ -8,14 +8,10 @@ import hmac
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from supabase import create_client, Client
 from st_supabase_connection import SupabaseConnection
 
 # Initialize connection.
-conn = st.connection("supabase",type=SupabaseConnection)
-
-# Initialize Supabase client
-# supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
+conn = st.connection("supabase", type=SupabaseConnection)
 
 class UserAuth:
     def __init__(self):
@@ -107,7 +103,7 @@ class UserAuth:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
         else:
-            result = supabase.table("users").select("*").eq("username", username).single().execute()
+            result = conn.table("users").select("*").eq("username", username).single().execute()
             user = result.data
             if user:
                 stored_password = user.get("password")
@@ -169,7 +165,7 @@ class UserAuth:
             # Debugging: Print data being inserted
             st.write("Inserting data:", data)
             
-            response = supabase.table("users").insert(data).execute()
+            response = conn.table("users").insert(data).execute()
             
             # Debugging: Check the response from Supabase
             st.write("Supabase response:", response)
@@ -181,7 +177,6 @@ class UserAuth:
                 st.error(f"User registration failed with error: {response.error_message}")
         except Exception as e:
             st.error(f"An error occurred: {e}")
-
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
@@ -200,11 +195,11 @@ class UserAuth:
 
     def reset_password(self, email, dob, new_password):
         """Reset a user's password."""
-        user_query = supabase.table("users").select("*").eq("email", email).eq("dob", dob).single().execute()
+        user_query = conn.table("users").select("*").eq("email", email).eq("dob", dob).single().execute()
         user = user_query.data
         if user:
             hashed_password = self.hash_password(new_password)
-            supabase.table("users").update({"password": hashed_password}).eq("email", email).execute()
+            conn.table("users").update({"password": hashed_password}).eq("email", email).execute()
             st.success("Password reset successfully.")
         else:
             st.error("Invalid Email or Date of Birth.")
@@ -221,7 +216,7 @@ class UserAuth:
 
     def retrieve_user_id(self, dob):
         """Retrieve and display the user ID(s) associated with the given date of birth."""
-        user_query = supabase.table("users").select("username").eq("dob", dob).execute()
+        user_query = conn.table("users").select("username").eq("dob", dob).execute()
         found_users = user_query.data
         if found_users:
             user_ids = ", ".join([user["username"] for user in found_users])
@@ -231,7 +226,7 @@ class UserAuth:
 
     def admin_view_all_users(self):
         """Allow the admin to view all users in the Supabase."""
-        users_query = supabase.table("users").select("username, email, dob").execute()
+        users_query = conn.table("users").select("username, email, dob").execute()
         users = users_query.data
         st.write(f"Fetched users: {users}")
         if users:
