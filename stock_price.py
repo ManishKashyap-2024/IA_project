@@ -8,278 +8,108 @@ import hmac
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, text
 
-# Create the SQL connection to user_db as specified in your secrets file.
-conn = st.connection('user_db', type='sql')
-
-# Create users table if it doesn't exist
-with conn.session as s:
-    s.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            email TEXT UNIQUE,
-            dob TEXT,
-            password TEXT
-        );
-    ''')
-    s.commit()
-
-st.write("Users table has been created.")
+# Establish connection to SQLite database
+engine = create_engine(st.secrets["connections"]["user_db"]["url"])
 
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
         self.is_admin_authenticated = st.session_state.get("is_admin_authenticated", False)
-        self.admin_email = st.secrets["admin"]["email"]
-        self.admin_password = st.secrets["admin"]["password"]
-        self.admin_user_id = st.secrets["admin"]["user_id"]
-
-    def hash_password(self, password):
-        """Hash a password using SHA256."""
-        return hashlib.sha256(password.encode()).hexdigest()
-
-    def send_email(self, to_email, subject, body):
-        """Send an email using smtplib."""
-        msg = MIMEMultipart()
-        msg['From'] = self.admin_email
-        msg['To'] = to_email
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body, 'plain'))
-
-        try:
-            server = smtplib.SMTP('smtp.gmail.com', 587)
-            server.starttls()
-            server.login(self.admin_email, self.admin_password)
-            text = msg.as_string()
-            server.sendmail(self.admin_email, to_email, text)
-            server.quit()
-        except Exception as e:
-            st.error(f"Failed to send email: {e}")
 
     def validate_user_password(self):
-        """Validate the user's password."""
+        """Validate user credentials."""
         if self.is_authenticated:
             return True
 
-        self.show_login_form()
+        self.show_user_login_form()
 
         if "is_authenticated" in st.session_state and not st.session_state["is_authenticated"]:
-            st.error("Invalid User ID or password.")
+            st.error("Invalid username or password.")
 
         return self.is_authenticated
 
     def validate_admin_password(self):
-        """Validate the admin's password."""
+        """Validate admin credentials."""
         if self.is_admin_authenticated:
             return True
 
         self.show_admin_login_form()
 
         if "is_admin_authenticated" in st.session_state and not st.session_state["is_admin_authenticated"]:
-            st.error("Invalid Admin ID or password.")
+            st.error("Invalid admin credentials.")
 
         return self.is_admin_authenticated
 
-    def show_login_form(self):
-        """Show the login form for regular users."""
-        with st.form("Login Form"):
+    def show_user_login_form(self):
+        """Form for user login."""
+        with st.form("User Login Form"):
             st.text_input("User ID", key="username")
             st.text_input("Password", type="password", key="password")
             st.form_submit_button("Log in", on_click=self.verify_user_password)
 
-        st.button("New User? Sign Up", on_click=self.show_signup_form)
-        st.button("Forgot Password?", on_click=self.show_reset_password_form)
-        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
-
     def show_admin_login_form(self):
-        """Show the login form for the admin."""
+        """Form for admin login."""
         with st.form("Admin Login Form"):
             st.text_input("Admin ID", key="admin_username")
-            st.text_input("Password", type="password", key="admin_password")
-            st.form_submit_button("Log in", on_click=self.verify_admin_password)
+            st.text_input("Admin Password", type="password", key="admin_password")
+            st.form_submit_button("Admin Log in", on_click=self.verify_admin_password)
 
     def verify_user_password(self):
-        """Verify the user's password."""
-        username = st.session_state.get("username")
-        password = st.session_state.get("password")
-
-        if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
-            # Admin logs in through the user tab, give them full access
+        """Check user credentials."""
+        # User credential verification logic
+        # Replace the below lines with actual database verification logic
+        if st.session_state["username"] == "correct_user" and st.session_state["password"] == "correct_password":
             st.session_state["is_authenticated"] = True
-            st.session_state["is_admin_authenticated"] = True
             self.is_authenticated = True
-            self.is_admin_authenticated = True
         else:
-            query = "SELECT password FROM users WHERE username = :username"
-            result = conn.session.execute(query, {'username': username}).fetchone()
-
-            if result and hmac.compare_digest(self.hash_password(password), result.password):
-                st.session_state["is_authenticated"] = True
-                self.is_authenticated = True
-            else:
-                st.session_state["is_authenticated"] = False
-                self.is_authenticated = False
+            st.session_state["is_authenticated"] = False
+            self.is_authenticated = False
 
     def verify_admin_password(self):
-        """Verify the admin's password."""
-        admin_username = st.session_state.get("admin_username")
-        admin_password = st.session_state.get("admin_password")
-
-        if admin_username == self.admin_user_id and hmac.compare_digest(admin_password, self.admin_password):
+        """Check admin credentials."""
+        # Admin credential verification logic
+        if st.session_state["admin_username"] == st.secrets["admin_id"] and st.session_state["admin_password"] == st.secrets["admin_password"]:
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
         else:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
 
-    def show_signup_form(self):
-        """Show the sign-up form for new users."""
-        with st.form("Sign Up Form"):
-            email = st.text_input("Email")
-            dob = st.text_input("Date of Birth (ddmmyy)")
-            username = st.text_input("Choose a Username (User ID)")
-            password = st.text_input("Choose a Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
-            if st.form_submit_button("Sign Up"):
-                if password == confirm_password:
-                    self.add_user(username, email, dob, password)
-                else:
-                    st.error("Passwords do not match.")
-
-    def add_user(self, username, email, dob, password):
-        """ Add a new user to the database."""
-        try:
-            query = '''
-                INSERT INTO users (username, email, dob, password)
-                VALUES (:username, :email, :dob, :password);
-            '''
-            conn.session.execute(query, {
-                'username': username,
-                'email': email,
-                'dob': dob,
-                'password': self.hash_password(password)
-            })
-            conn.session.commit()
-    
-            # Verify that the user has been added
-            user_check = conn.session.execute("SELECT * FROM users WHERE username = :username", {'username': username}).fetchone()
-            if user_check:
-                st.success("User registered successfully!")
-                self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
-            else:
-                st.error("User registration failed.")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-
-
-    def show_reset_password_form(self):
-        """ Show the form to reset the password."""
-        st.session_state["show_signup_form"] = False
-        with st.form("Reset Password Form"):
-            email = st.text_input("User Email")
-            dob = st.text_input("Date of Birth (ddmmyy)")
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm New Password", type="password")
-            if st.form_submit_button("Reset Password"):
-                if new_password == confirm_password:
-                    self.reset_password(email, dob, new_password)
-                else:
-                    st.error("Passwords do not match.")
-
-    def reset_password(self, email, dob, new_password):
-        """ Reset a user's password."""
-        query = "SELECT * FROM users WHERE email = :email AND dob = :dob"
-        user = conn.session.execute(query, {'email': email, 'dob': dob}).fetchone()
-
-        if user:
-            update_query = 'UPDATE users SET password = :password WHERE email = :email'
-            conn.session.execute(update_query, {
-                'password': self.hash_password(new_password),
-                'email': email
-            })
-            conn.session.commit()
-            st.success("Password reset successfully.")
-        else:
-            st.error("Invalid Email or Date of Birth.")
-
-    def show_retrieve_user_id_form(self):
-        """ Show the form to retrieve a user ID based on the date of birth."""
-        st.session_state["show_signup_form"] = False
-        with st.form("Retrieve User ID Form"):
-            dob = st.text_input("Date of Birth (ddmmyy)")
-            if st.form_submit_button("Retrieve User ID"):
-                self.retrieve_user_id(dob)
-
-    def retrieve_user_id(self, dob):
-        """Retrieve and display the user ID(s) associated with the given date of birth."""
-        query = 'SELECT username FROM users WHERE dob = :dob'
-        found_users = conn.session.execute(query, {'dob': dob}).fetchall()
-
-        if found_users:
-            user_ids = ", ".join([user.username for user in found_users])
-            st.success(f"User ID(s) found: {user_ids}")
-        else:
-            st.error("No user found with the given Date of Birth.")
-
-    def admin_view_all_users(self):
-        """Allow the admin to view all users in the database."""
-        query = 'SELECT username, email, dob FROM users'
-        users = conn.session.execute(query).fetchall()
-    
-        # Check the actual contents returned
-        st.write(f"Fetched users: {users}")
-    
-        if users:
-            st.write("Current Users in the Database:")
-            for user in users:
-                st.write(f"Username: {user.username}, Email: {user.email}, DOB: {user.dob}")
-        else:
-            st.warning("No users found in the database.")
-
-
     def admin_dashboard(self):
-        """Show the admin dashboard in the sidebar."""
-        with st.sidebar:
-            st.write("## Admin Dashboard")
-            if st.button("View All Users"):
-                self.admin_view_all_users()
+        """Display admin dashboard with options for viewing the database."""
+        st.sidebar.title("Admin Dashboard")
+        st.sidebar.write("Welcome, Admin!")
 
+        if st.sidebar.button("View All Users"):
+            self.view_database()
+
+    def view_database(self):
+        """Allow the admin to view the database contents."""
+        st.write("**Viewing Database Contents**")
+        with engine.connect() as connection:
+            result = connection.execute(text("SELECT * FROM users")).fetchall()
+            if result:
+                st.write("Contents of users table:")
+                st.write(result)
+            else:
+                st.write("No data found in users table.")
 
 class StockAnalysisApp:
     def __init__(self):
         self.auth = UserAuth()
-        self.today = datetime.date.today()
-        self.start_date = self.today - datetime.timedelta(days=365)
-        self.end_date = self.today
-        self.ticker_list = pd.read_csv('stock_list.txt')
-        self.selected_ticker = None
-
-    def init_state_variables(self):
-        # Initialize session state variables for each feature
-        features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
-        for feature in features:
-            if feature not in st.session_state:
-                st.session_state[feature] = False
 
     def run(self):
-        tab1, tab2 = st.tabs(["User Login", "Admin Login"])
+        st.sidebar.title("Login")
+        app_mode = st.sidebar.selectbox("Select Mode", ["User Login", "Admin Login"])
 
-        with tab1:
-            self.auth.validate_user_password()
-
-        with tab2:
-            self.auth.validate_admin_password()
-
-        if st.session_state.get("is_authenticated"):
-            # Add your stock analysis functionality here
-            self.stock_analysis()
-
-        if st.session_state.get("is_admin_authenticated"):
-            # Admin-specific functionality
-            self.auth.admin_dashboard()
+        if app_mode == "User Login":
+            if self.auth.validate_user_password():
+                self.stock_analysis()
+        elif app_mode == "Admin Login":
+            if self.auth.validate_admin_password():
+                self.auth.admin_dashboard()
 
     def stock_analysis(self):
         st.markdown('''
