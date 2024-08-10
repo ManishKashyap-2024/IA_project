@@ -110,6 +110,10 @@ class UserAuth:
 class StockAnalysisApp:
     def __init__(self):
         self.auth = UserAuth()
+        self.today = datetime.date.today()
+        self.start_date = self.today - datetime.timedelta(days=365)
+        self.end_date = self.today
+        self.selected_ticker = None
 
     def run(self):
         st.sidebar.title("Login")
