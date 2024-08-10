@@ -59,7 +59,6 @@ class UserAuth:
     def verify_user_password(self):
         """Check user credentials."""
         # User credential verification logic
-        # Replace the below lines with actual database verification logic
         if st.session_state["username"] == "correct_user" and st.session_state["password"] == "correct_password":
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
@@ -70,7 +69,10 @@ class UserAuth:
     def verify_admin_password(self):
         """Check admin credentials."""
         # Admin credential verification logic
-        if st.session_state["admin_username"] == st.secrets["admin"]["admin_id"] and st.session_state["admin"]["admin_password"] == st.secrets["admin_password"]:
+        admin_id = st.secrets["admin"]["admin_id"]
+        admin_password = st.secrets["admin"]["admin_password"]
+        
+        if st.session_state["admin_username"] == admin_id and st.session_state["admin_password"] == admin_password:
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
         else:
