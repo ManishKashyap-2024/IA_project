@@ -150,7 +150,7 @@ class UserAuth:
                     st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
-        """Add a new user to the database."""
+    """Add a new user to the database."""
         try:
             query = '''
                 INSERT INTO users (username, email, dob, password)
@@ -163,10 +163,17 @@ class UserAuth:
                 'password': self.hash_password(password)
             })
             conn.session.commit()
-            st.success("User registered successfully!")
-            self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
+    
+            # Verify that the user has been added
+            user_check = conn.session.execute("SELECT * FROM users WHERE username = :username", {'username': username}).fetchone()
+            if user_check:
+                st.success("User registered successfully!")
+                self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
+            else:
+                st.error("User registration failed.")
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
@@ -221,13 +228,17 @@ class UserAuth:
         """Allow the admin to view all users in the database."""
         query = 'SELECT username, email, dob FROM users'
         users = conn.session.execute(query).fetchall()
-
+    
+        # Check the actual contents returned
+        st.write(f"Fetched users: {users}")
+    
         if users:
             st.write("Current Users in the Database:")
             for user in users:
                 st.write(f"Username: {user.username}, Email: {user.email}, DOB: {user.dob}")
         else:
             st.warning("No users found in the database.")
+
 
     def admin_dashboard(self):
         """Show the admin dashboard in the sidebar."""
