@@ -150,7 +150,7 @@ class UserAuth:
                     st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
-    """Add a new user to the database."""
+        """ Add a new user to the database."""
         try:
             query = '''
                 INSERT INTO users (username, email, dob, password)
@@ -176,7 +176,7 @@ class UserAuth:
 
 
     def show_reset_password_form(self):
-        """Show the form to reset the password."""
+        """ Show the form to reset the password."""
         st.session_state["show_signup_form"] = False
         with st.form("Reset Password Form"):
             email = st.text_input("User Email")
@@ -190,7 +190,7 @@ class UserAuth:
                     st.error("Passwords do not match.")
 
     def reset_password(self, email, dob, new_password):
-        """Reset a user's password."""
+        """ Reset a user's password."""
         query = "SELECT * FROM users WHERE email = :email AND dob = :dob"
         user = conn.session.execute(query, {'email': email, 'dob': dob}).fetchone()
 
@@ -206,7 +206,7 @@ class UserAuth:
             st.error("Invalid Email or Date of Birth.")
 
     def show_retrieve_user_id_form(self):
-        """Show the form to retrieve a user ID based on the date of birth."""
+        """ Show the form to retrieve a user ID based on the date of birth."""
         st.session_state["show_signup_form"] = False
         with st.form("Retrieve User ID Form"):
             dob = st.text_input("Date of Birth (ddmmyy)")
