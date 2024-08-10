@@ -376,10 +376,10 @@ class StockAnalysisApp:
                 self.ticker_info.info.get('previousClose', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekHigh', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekLow', 'N/A'),
-                self.ticker_info.get('trailingPE', 'N/A'),
-                self.ticker_info.get('beta', 'N/A'),
-                self.ticker_info.get('pegRatio', 'N/A'),
-                self.ticker_info.get('forwardPE', 'N/A')
+                self.ticker_info.info.get('trailingPE', 'N/A'),
+                self.ticker_info.info.get('beta', 'N/A'),
+                self.ticker_info.info.get('pegRatio', 'N/A'),
+                self.ticker_info.info.get('forwardPE', 'N/A')
             ]
         }
         metrics_df = pd.DataFrame(metrics)
