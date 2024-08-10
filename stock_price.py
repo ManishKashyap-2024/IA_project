@@ -41,7 +41,7 @@ class UserAuth:
         self.is_admin_authenticated = st.session_state.get("is_admin_authenticated", False)
         self.admin_email = st.secrets["admin_email"]
         self.admin_password = st.secrets["admin_password"]
-        self.admin_user_id = st.secrets["admin_user_id"]  # Read admin User ID from secrets
+        self.admin_user_id = st.secrets["admin_user_id"]
 
     def hash_password(self, password):
         """Hash a password using SHA256."""
@@ -113,18 +113,25 @@ class UserAuth:
         username = st.session_state.get("username")
         password = st.session_state.get("password")
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT password FROM users WHERE username = ?', (username,))
-        result = cur.fetchone()
-        conn.close()
-
-        if result and hmac.compare_digest(self.hash_password(password), result["password"]):
+        if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
+            # Admin logs in through the user tab, give them full access
             st.session_state["is_authenticated"] = True
+            st.session_state["is_admin_authenticated"] = True
             self.is_authenticated = True
+            self.is_admin_authenticated = True
         else:
-            st.session_state["is_authenticated"] = False
-            self.is_authenticated = False
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute('SELECT password FROM users WHERE username = ?', (username,))
+            result = cur.fetchone()
+            conn.close()
+
+            if result and hmac.compare_digest(self.hash_password(password), result["password"]):
+                st.session_state["is_authenticated"] = True
+                self.is_authenticated = True
+            else:
+                st.session_state["is_authenticated"] = False
+                self.is_authenticated = False
 
     def verify_admin_password(self):
         """Verify the admin's password."""
@@ -240,15 +247,10 @@ class UserAuth:
 
 class StockAnalysisApp:
     def __init__(self):
-        # Initialize UserAuth for handling authentication
         self.auth = UserAuth()
-
-        # Date initialization for stock data
         self.today = datetime.date.today()
         self.start_date = self.today - datetime.timedelta(days=365)
         self.end_date = self.today
-        
-        # Initialize ticker list (assuming you have a list of stock tickers)
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.selected_ticker = None
 
@@ -260,7 +262,6 @@ class StockAnalysisApp:
                 st.session_state[feature] = False
 
     def run(self):
-        # Tabs for user login and admin login
         tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
         # User login tab
@@ -268,28 +269,15 @@ class StockAnalysisApp:
             if not self.auth.validate_user_password():
                 st.stop()
 
-            # Show the app title after successful login
             self.show_app_title()
-
-            # Set date inputs for the stock data
             self.set_date_inputs()
-
-            # Allow the user to choose a stock ticker
             self.choose_ticker()
-
-            # Fetch stock data based on the selected ticker
             self.fetch_ticker_data()
-
-            # Display stock information
             self.show_stock_info()
-
-            # Display financial metrics
             self.show_financial_metrics()
 
-            # Initialize session state variables for each feature
             self.init_state_variables()
 
-            # Interactive buttons to show different analysis features
             if st.button('Show Bollinger Bands'):
                 st.session_state.bollinger_bands = True
             
@@ -388,10 +376,10 @@ class StockAnalysisApp:
                 self.ticker_info.info.get('previousClose', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekHigh', 'N/A'),
                 self.ticker_info.info.get('fiftyTwoWeekLow', 'N/A'),
-                self.ticker_info.info.get('trailingPE', 'N/A'),
-                self.ticker_info.info.get('beta', 'N/A'),
-                self.ticker_info.info.get('pegRatio', 'N/A'),
-                self.ticker_info.info.get('forwardPE', 'N/A')
+                self.ticker_info.get('trailingPE', 'N/A'),
+                self.ticker_info.get('beta', 'N/A'),
+                self.ticker_info.get('pegRatio', 'N/A'),
+                self.ticker_info.get('forwardPE', 'N/A')
             ]
         }
         metrics_df = pd.DataFrame(metrics)
