@@ -5,7 +5,7 @@ import cufflinks as cf
 import datetime
 import hashlib
 import hmac
-import sqlite3
+import pysqlite3 as sqlite3
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
