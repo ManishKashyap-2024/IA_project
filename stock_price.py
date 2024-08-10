@@ -12,7 +12,7 @@ from st_supabase_connection import SupabaseConnection
 from supabase import create_client, Client
 
 # Initialize connection.
-conn = st.connection("supabase", type=SupabaseConnection)
+# conn = st.connection("supabase", type=SupabaseConnection)
 
 # Initialize Supabase client using the correct path to secrets
 url = st.secrets["connections"]["supabase"]["SUPABASE_URL"]
@@ -109,7 +109,7 @@ class UserAuth:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
         else:
-            result = conn.table("users").select("*").eq("username", username).single().execute()
+            result = supabase.table("users").select("*").eq("username", username).single().execute()
             user = result.data
             if user:
                 stored_password = user.get("password")
@@ -171,7 +171,7 @@ class UserAuth:
             # Debugging: Print data being inserted
             st.write("Inserting data:", data)
             
-            response = conn.table("users").insert(data).execute()
+            response = supabase.table("users").insert(data).execute()
             
             # Debugging: Check the response from Supabase
             st.write("Supabase response:", response)
@@ -201,11 +201,11 @@ class UserAuth:
 
     def reset_password(self, email, dob, new_password):
         """Reset a user's password."""
-        user_query = conn.table("users").select("*").eq("email", email).eq("dob", dob).single().execute()
+        user_query = supabase.table("users").select("*").eq("email", email).eq("dob", dob).single().execute()
         user = user_query.data
         if user:
             hashed_password = self.hash_password(new_password)
-            conn.table("users").update({"password": hashed_password}).eq("email", email).execute()
+            supabase.table("users").update({"password": hashed_password}).eq("email", email).execute()
             st.success("Password reset successfully.")
         else:
             st.error("Invalid Email or Date of Birth.")
@@ -222,7 +222,7 @@ class UserAuth:
 
     def retrieve_user_id(self, dob):
         """Retrieve and display the user ID(s) associated with the given date of birth."""
-        user_query = conn.table("users").select("username").eq("dob", dob).execute()
+        user_query = supabase.table("users").select("username").eq("dob", dob).execute()
         found_users = user_query.data
         if found_users:
             user_ids = ", ".join([user["username"] for user in found_users])
@@ -232,7 +232,7 @@ class UserAuth:
 
     def admin_view_all_users(self):
         """Allow the admin to view all users in the Supabase."""
-        users_query = conn.table("users").select("username, email, dob").execute()
+        users_query = supabase.table("users").select("username, email, dob").execute()
         users = users_query.data
         st.write(f"Fetched users: {users}")
         if users:
