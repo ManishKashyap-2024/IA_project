@@ -39,7 +39,7 @@ class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
         self.admin_email = st.secrets["admin_email"]  # Store admin email in secrets.toml
-        self.email_password = st.secrets["email_password"]  # Store email password in secrets.toml
+        self.admin_password = st.secrets["admin_password"]  # Store admin password in secrets.toml
 
     def hash_password(self, password):
         """Hash a password using SHA256."""
@@ -57,7 +57,7 @@ class UserAuth:
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)  # Use Gmail's SMTP server
             server.starttls()
-            server.login(self.admin_email, self.email_password)
+            server.login(self.admin_email, self.admin_password)
             text = msg.as_string()
             server.sendmail(self.admin_email, to_email, text)
             server.quit()
@@ -79,7 +79,7 @@ class UserAuth:
     def show_login_form(self):
         """Show the login form."""
         with st.form("Login Form"):
-            st.text_input("Username", key="username")
+            st.text_input("Email", key="email")
             st.text_input("Password", type="password", key="password")
             st.form_submit_button("Log in", on_click=self.verify_password)
 
@@ -89,20 +89,25 @@ class UserAuth:
 
     def verify_password(self):
         """Verify the entered password."""
-        username = st.session_state.get("username")
+        email = st.session_state.get("email")
         password = st.session_state.get("password")
 
+        # Admin login case
+        if email == self.admin_email and hmac.compare_digest(password, self.admin_password):
+            st.session_state["is_authenticated"] = True
+            self.is_authenticated = True
+            return
+
+        # User login case
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT password FROM users WHERE username = ?', (username,))
+        cur.execute('SELECT password FROM users WHERE email = ?', (email,))
         result = cur.fetchone()
         conn.close()
 
         if result and hmac.compare_digest(self.hash_password(password), result["password"]):
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
-            del st.session_state["password"]
-            del st.session_state["username"]
         else:
             st.session_state["is_authenticated"] = False
             self.is_authenticated = False
@@ -136,37 +141,37 @@ class UserAuth:
             st.success("User registered successfully!")
             self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
         except sqlite3.IntegrityError:
-            st.error("Username already exists.")
+            st.error("Username or Email already exists.")
         finally:
             conn.close()
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
         with st.form("Reset Password Form"):
-            username = st.text_input("User ID")
+            email = st.text_input("User Email")
             dob = st.text_input("Date of Birth (ddmmyy)")
             new_password = st.text_input("New Password", type="password")
             confirm_password = st.text_input("Confirm New Password", type="password")
             if st.form_submit_button("Reset Password"):
                 if new_password == confirm_password:
-                    self.reset_password(username, dob, new_password)
+                    self.reset_password(email, dob, new_password)
                 else:
                     st.error("Passwords do not match.")
 
-    def reset_password(self, username, dob, new_password):
+    def reset_password(self, email, dob, new_password):
         """Reset a user's password."""
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT * FROM users WHERE username = ? AND dob = ?', (username, dob))
+        cur.execute('SELECT * FROM users WHERE email = ? AND dob = ?', (email, dob))
         user = cur.fetchone()
 
         if user:
-            cur.execute('UPDATE users SET password = ? WHERE username = ?',
-                        (self.hash_password(new_password), username))
+            cur.execute('UPDATE users SET password = ? WHERE email = ?',
+                        (self.hash_password(new_password), email))
             conn.commit()
             st.success("Password reset successfully.")
         else:
-            st.error("Invalid User ID or Date of Birth.")
+            st.error("Invalid Email or Date of Birth.")
         conn.close()
 
     def show_retrieve_user_id_form(self):
