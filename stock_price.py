@@ -110,7 +110,7 @@ class UserAuth:
             # Admin logs in through the user tab, but we treat this as a user login
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
-            # Ensure admin dashboard does not appear in the user login
+            # Ensure admin dashboard and admin login tab do not appear in the user login
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
         else:
@@ -265,20 +265,26 @@ class StockAnalysisApp:
                 st.session_state[feature] = False
 
     def run(self):
-        tab1, tab2 = st.tabs(["User Login", "Admin Login"])
+        # Only show tabs if no one is authenticated
+        if not st.session_state.get("is_authenticated") and not st.session_state.get("is_admin_authenticated"):
+            tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
-        with tab1:
-            self.auth.validate_user_password()
+            with tab1:
+                self.auth.validate_user_password()
 
-            if st.session_state.get("is_authenticated"):
-                # If the admin logs in as a user, they should not see the admin dashboard
-                st.session_state["is_admin_authenticated"] = False
-                self.stock_analysis()
+                if st.session_state.get("is_authenticated"):
+                    # If the admin logs in as a user, they should not see the admin dashboard
+                    st.session_state["is_admin_authenticated"] = False
+                    self.stock_analysis()
 
-        with tab2:
-            if self.auth.validate_admin_password():
-                # Admin-specific functionality here, only visible after admin login
-                self.auth.admin_dashboard()
+            with tab2:
+                if self.auth.validate_admin_password():
+                    # Admin-specific functionality here, only visible after admin login
+                    self.auth.admin_dashboard()
+
+        elif st.session_state.get("is_authenticated"):
+            # Show the stock analysis only if user is authenticated
+            self.stock_analysis()
 
     def stock_analysis(self):
         st.markdown('''
