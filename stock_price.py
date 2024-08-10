@@ -242,10 +242,9 @@ class UserAuth:
 
     def admin_dashboard(self):
         """Show the admin dashboard in the sidebar."""
-        with st.sidebar:
-            st.write("## Admin Dashboard")
-            if st.button("View All Users"):
-                self.admin_view_all_users()
+        st.sidebar.write("## Admin Dashboard")
+        if st.sidebar.button("View All Users"):
+            self.admin_view_all_users()
 
 
 class StockAnalysisApp:
@@ -270,13 +269,14 @@ class StockAnalysisApp:
         with tab1:
             self.auth.validate_user_password()
 
+            if st.session_state.get("is_authenticated"):
+                # Stock analysis functionality here
+                self.stock_analysis()
+
         with tab2:
             if self.auth.validate_admin_password():
+                # Admin-specific functionality here, only visible after admin login
                 self.auth.admin_dashboard()
-
-        if st.session_state.get("is_authenticated"):
-            # Stock analysis functionality here
-            self.stock_analysis()
 
     def stock_analysis(self):
         st.markdown('''
@@ -443,4 +443,3 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
-
