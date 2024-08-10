@@ -3,15 +3,69 @@ import yfinance as yf
 import pandas as pd
 import cufflinks as cf
 import datetime
-import matplotlib.pyplot as plt
+import hashlib
 import hmac
+import sqlite3
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# Function to connect to the SQLite database
+def get_db_connection():
+    conn = sqlite3.connect('users.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Function to create the users table if it doesn't exist
+def create_user_table():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT NOT NULL,
+            dob TEXT NOT NULL,
+            password TEXT NOT NULL
+        );
+    ''')
+    conn.commit()
+    conn.close()
+
+# Call the function to ensure the table is created
+create_user_table()
 
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
+        self.admin_email = st.secrets["admin_email"]  # Store admin email in secrets.toml
+        self.email_password = st.secrets["email_password"]  # Store email password in secrets.toml
+
+    def hash_password(self, password):
+        """Hash a password using SHA256."""
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    def send_email(self, to_email, subject, body):
+        """Send an email using smtplib."""
+        msg = MIMEMultipart()
+        msg['From'] = self.admin_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        try:
+            server = smtplib.SMTP('smtp.gmail.com', 587)  # Use Gmail's SMTP server
+            server.starttls()
+            server.login(self.admin_email, self.email_password)
+            text = msg.as_string()
+            server.sendmail(self.admin_email, to_email, text)
+            server.quit()
+        except Exception as e:
+            st.error(f"Failed to send email: {e}")
 
     def validate_password(self):
-        """This part checks if the user has put in the correct password."""
+        """Validate the user's password."""
         if self.is_authenticated:
             return True
 
@@ -23,32 +77,130 @@ class UserAuth:
         return self.is_authenticated
 
     def show_login_form(self):
-        """This part shows the login form to the user for authentication purpose."""
+        """Show the login form."""
         with st.form("Login Form"):
             st.text_input("Username", key="username")
             st.text_input("Password", type="password", key="password")
             st.form_submit_button("Log in", on_click=self.verify_password)
 
+        st.button("New User? Sign Up", on_click=self.show_signup_form)
+        st.button("Forgot Password?", on_click=self.show_reset_password_form)
+        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
+
     def verify_password(self):
-        """This part verifies the password entered."""
-        if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
-            st.session_state["password"],
-            st.secrets.passwords[st.session_state["username"]],
-        ):
+        """Verify the entered password."""
+        username = st.session_state.get("username")
+        password = st.session_state.get("password")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT password FROM users WHERE username = ?', (username,))
+        result = cur.fetchone()
+        conn.close()
+
+        if result and hmac.compare_digest(self.hash_password(password), result["password"]):
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
-            del st.session_state["password"]  
+            del st.session_state["password"]
             del st.session_state["username"]
         else:
             st.session_state["is_authenticated"] = False
             self.is_authenticated = False
 
+    def show_signup_form(self):
+        """Show the sign-up form for new users."""
+        with st.form("Sign Up Form"):
+            email = st.text_input("Email")
+            dob = st.text_input("Date of Birth (ddmmyy)")
+            username = st.text_input("Choose a Username")
+            password = st.text_input("Choose a Password", type="password")
+            confirm_password = st.text_input("Confirm Password", type="password")
+            if st.form_submit_button("Sign Up"):
+                if password == confirm_password:
+                    self.add_user(username, email, dob, password)
+                else:
+                    st.error("Passwords do not match.")
+
+    def add_user(self, username, email, dob, password):
+        """Add a new user."""
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        try:
+            cur.execute('''
+                INSERT INTO users (username, email, dob, password)
+                VALUES (?, ?, ?, ?);
+            ''', (username, email, dob, self.hash_password(password)))
+
+            conn.commit()
+            st.success("User registered successfully!")
+            self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
+        except sqlite3.IntegrityError:
+            st.error("Username already exists.")
+        finally:
+            conn.close()
+
+    def show_reset_password_form(self):
+        """Show the form to reset the password."""
+        with st.form("Reset Password Form"):
+            username = st.text_input("User ID")
+            dob = st.text_input("Date of Birth (ddmmyy)")
+            new_password = st.text_input("New Password", type="password")
+            confirm_password = st.text_input("Confirm New Password", type="password")
+            if st.form_submit_button("Reset Password"):
+                if new_password == confirm_password:
+                    self.reset_password(username, dob, new_password)
+                else:
+                    st.error("Passwords do not match.")
+
+    def reset_password(self, username, dob, new_password):
+        """Reset a user's password."""
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT * FROM users WHERE username = ? AND dob = ?', (username, dob))
+        user = cur.fetchone()
+
+        if user:
+            cur.execute('UPDATE users SET password = ? WHERE username = ?',
+                        (self.hash_password(new_password), username))
+            conn.commit()
+            st.success("Password reset successfully.")
+        else:
+            st.error("Invalid User ID or Date of Birth.")
+        conn.close()
+
+    def show_retrieve_user_id_form(self):
+        """Show the form to retrieve a user ID based on the date of birth."""
+        with st.form("Retrieve User ID Form"):
+            dob = st.text_input("Date of Birth (ddmmyy)")
+            if st.form_submit_button("Retrieve User ID"):
+                self.retrieve_user_id(dob)
+
+    def retrieve_user_id(self, dob):
+        """Retrieve and display the user ID(s) associated with the given date of birth."""
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute('SELECT username FROM users WHERE dob = ?', (dob,))
+        found_users = cur.fetchall()
+        conn.close()
+
+        if found_users:
+            user_ids = ", ".join([user["username"] for user in found_users])
+            st.success(f"User ID(s) found: {user_ids}")
+        else:
+            st.error("No user found with the given Date of Birth.")
+
 class StockAnalysisApp:
     def __init__(self):
+        # Initialize UserAuth for handling authentication
         self.auth = UserAuth()
+
+        # Date initialization for stock data
         self.today = datetime.date.today()
         self.start_date = self.today - datetime.timedelta(days=365)
         self.end_date = self.today
+        
+        # Initialize ticker list (assuming you have a list of stock tickers)
         self.ticker_list = pd.read_csv('stock_list.txt')
         self.selected_ticker = None
 
@@ -60,17 +212,32 @@ class StockAnalysisApp:
                 st.session_state[feature] = False
 
     def run(self):
+        # Check if the user is authenticated
         if not self.auth.validate_password():
-            st.stop()
+            st.stop()  # Stop the app if the user is not authenticated
+
+        # Show the app title after successful login
         self.show_app_title()
+
+        # Set date inputs for the stock data
         self.set_date_inputs()
+
+        # Allow the user to choose a stock ticker
         self.choose_ticker()
+
+        # Fetch stock data based on the selected ticker
         self.fetch_ticker_data()
+
+        # Display stock information
         self.show_stock_info()
+
+        # Display financial metrics
         self.show_financial_metrics()
 
+        # Initialize session state variables for each feature
         self.init_state_variables()
 
+        # Interactive buttons to show different analysis features
         if st.button('Show Bollinger Bands'):
             st.session_state.bollinger_bands = True
         
@@ -227,7 +394,6 @@ class StockAnalysisApp:
         st.write(self.sorted_ticker_history)
 
         st.markdown('Stock Analysis App by *Your Name*')
-        st.write('---')
 
 if __name__ == "__main__":
     app = StockAnalysisApp()
