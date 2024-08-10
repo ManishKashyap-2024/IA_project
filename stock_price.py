@@ -38,7 +38,7 @@ create_user_table()
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
-        self.is_admin = st.session_state.get("is_admin", False)
+        self.is_admin_authenticated = st.session_state.get("is_admin_authenticated", False)
         self.admin_email = st.secrets["admin_email"]
         self.admin_password = st.secrets["admin_password"]
         self.admin_user_id = st.secrets["admin_user_id"]  # Read admin User ID from secrets
@@ -66,7 +66,7 @@ class UserAuth:
         except Exception as e:
             st.error(f"Failed to send email: {e}")
 
-    def validate_password(self):
+    def validate_user_password(self):
         """Validate the user's password."""
         if self.is_authenticated:
             return True
@@ -78,32 +78,41 @@ class UserAuth:
 
         return self.is_authenticated
 
+    def validate_admin_password(self):
+        """Validate the admin's password."""
+        if self.is_admin_authenticated:
+            return True
+
+        self.show_admin_login_form()
+
+        if "is_admin_authenticated" in st.session_state and not st.session_state["is_admin_authenticated"]:
+            st.error("Invalid Admin ID or password.")
+
+        return self.is_admin_authenticated
+
     def show_login_form(self):
-        """Show the login form."""
-        if not st.session_state.get("show_signup_form", False):
-            with st.form("Login Form"):
-                st.text_input("User ID", key="username")
-                st.text_input("Password", type="password", key="password")
-                st.form_submit_button("Log in", on_click=self.verify_password)
+        """Show the login form for regular users."""
+        with st.form("Login Form"):
+            st.text_input("User ID", key="username")
+            st.text_input("Password", type="password", key="password")
+            st.form_submit_button("Log in", on_click=self.verify_user_password)
 
-            st.button("New User? Sign Up", on_click=self.show_signup_form)
-            st.button("Forgot Password?", on_click=self.show_reset_password_form)
-            st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
+        st.button("New User? Sign Up", on_click=self.show_signup_form)
+        st.button("Forgot Password?", on_click=self.show_reset_password_form)
+        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
 
-    def verify_password(self):
-        """Verify the entered password."""
+    def show_admin_login_form(self):
+        """Show the login form for the admin."""
+        with st.form("Admin Login Form"):
+            st.text_input("Admin ID", key="admin_username")
+            st.text_input("Password", type="password", key="admin_password")
+            st.form_submit_button("Log in", on_click=self.verify_admin_password)
+
+    def verify_user_password(self):
+        """Verify the user's password."""
         username = st.session_state.get("username")
         password = st.session_state.get("password")
 
-        # Admin login case
-        if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
-            st.session_state["is_authenticated"] = True
-            st.session_state["is_admin"] = True
-            self.is_authenticated = True
-            self.is_admin = True
-            return
-
-        # User login case
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute('SELECT password FROM users WHERE username = ?', (username,))
@@ -116,6 +125,18 @@ class UserAuth:
         else:
             st.session_state["is_authenticated"] = False
             self.is_authenticated = False
+
+    def verify_admin_password(self):
+        """Verify the admin's password."""
+        admin_username = st.session_state.get("admin_username")
+        admin_password = st.session_state.get("admin_password")
+
+        if admin_username == self.admin_user_id and hmac.compare_digest(admin_password, self.admin_password):
+            st.session_state["is_admin_authenticated"] = True
+            self.is_admin_authenticated = True
+        else:
+            st.session_state["is_admin_authenticated"] = False
+            self.is_admin_authenticated = False
 
     def show_signup_form(self):
         """Show the sign-up form for new users."""
@@ -216,6 +237,7 @@ class UserAuth:
         for user in users:
             st.write(dict(user))
 
+
 class StockAnalysisApp:
     def __init__(self):
         # Initialize UserAuth for handling authentication
@@ -238,77 +260,84 @@ class StockAnalysisApp:
                 st.session_state[feature] = False
 
     def run(self):
-        # Check if the user is authenticated
-        if not self.auth.validate_password():
-            st.stop()  # Stop the app if the user is not authenticated
+        # Tabs for user login and admin login
+        tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
-        # Show the app title after successful login
-        self.show_app_title()
+        # User login tab
+        with tab1:
+            if not self.auth.validate_user_password():
+                st.stop()
 
-        # Admin view to see all users
-        if self.auth.is_admin:
-            self.show_admin_sidebar()
+            # Show the app title after successful login
+            self.show_app_title()
 
-        # Set date inputs for the stock data
-        self.set_date_inputs()
+            # Set date inputs for the stock data
+            self.set_date_inputs()
 
-        # Allow the user to choose a stock ticker
-        self.choose_ticker()
+            # Allow the user to choose a stock ticker
+            self.choose_ticker()
 
-        # Fetch stock data based on the selected ticker
-        self.fetch_ticker_data()
+            # Fetch stock data based on the selected ticker
+            self.fetch_ticker_data()
 
-        # Display stock information
-        self.show_stock_info()
+            # Display stock information
+            self.show_stock_info()
 
-        # Display financial metrics
-        self.show_financial_metrics()
+            # Display financial metrics
+            self.show_financial_metrics()
 
-        # Initialize session state variables for each feature
-        self.init_state_variables()
+            # Initialize session state variables for each feature
+            self.init_state_variables()
 
-        # Interactive buttons to show different analysis features
-        if st.button('Show Bollinger Bands'):
-            st.session_state.bollinger_bands = True
-        
-        if st.session_state.bollinger_bands:
-            self.show_bollinger_bands()
-
-        if st.button('Show MACD Chart'):
-            st.session_state.macd = True
-
-        if st.session_state.macd:
-            self.show_macd()
-
-        if st.button('Show RSI'):
-            st.session_state.rsi = True
-
-        if st.session_state.rsi:
-            self.show_rsi()
-
-        if st.button('Show Analyst Ratings'):
-            st.session_state.analyst_ratings = True
-
-        if st.session_state.analyst_ratings:
-            self.show_analyst_ratings()
-
-        if st.button('Show Trading Volume Chart'):
-            st.session_state.trading_volume = True
-
-        if st.session_state.trading_volume:
-            self.show_trading_volume_chart()
-
-        if st.button('Show Income Statement'):
-            st.session_state.income_statement = True
-
-        if st.session_state.income_statement:
-            self.show_income_statement()
-
-        if st.button('Show Ticker Data'):
-            st.session_state.ticker_data = True
+            # Interactive buttons to show different analysis features
+            if st.button('Show Bollinger Bands'):
+                st.session_state.bollinger_bands = True
             
-        if st.session_state.ticker_data:
-            self.show_ticker_data()
+            if st.session_state.bollinger_bands:
+                self.show_bollinger_bands()
+
+            if st.button('Show MACD Chart'):
+                st.session_state.macd = True
+
+            if st.session_state.macd:
+                self.show_macd()
+
+            if st.button('Show RSI'):
+                st.session_state.rsi = True
+
+            if st.session_state.rsi:
+                self.show_rsi()
+
+            if st.button('Show Analyst Ratings'):
+                st.session_state.analyst_ratings = True
+
+            if st.session_state.analyst_ratings:
+                self.show_analyst_ratings()
+
+            if st.button('Show Trading Volume Chart'):
+                st.session_state.trading_volume = True
+
+            if st.session_state.trading_volume:
+                self.show_trading_volume_chart()
+
+            if st.button('Show Income Statement'):
+                st.session_state.income_statement = True
+
+            if st.session_state.income_statement:
+                self.show_income_statement()
+
+            if st.button('Show Ticker Data'):
+                st.session_state.ticker_data = True
+                
+            if st.session_state.ticker_data:
+                self.show_ticker_data()
+
+        # Admin login tab
+        with tab2:
+            if not self.auth.validate_admin_password():
+                st.stop()
+
+            self.show_admin_sidebar()
 
     def show_admin_sidebar(self):
         st.sidebar.title("Admin Dashboard")
