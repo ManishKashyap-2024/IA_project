@@ -8,30 +8,10 @@ import hmac
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
+from supabase import create_client, Client
 
-# Create the SQL connection to user_db as specified in your secrets file.
-conn = st.connection('user_db', type='sql')
-
-# Create users table if it doesn't exist
-def create_users_table():
-    try:
-        with conn.session as s:
-            s.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE,
-                    email TEXT UNIQUE,
-                    dob TEXT,
-                    password TEXT
-                );
-            ''')
-            s.commit()
-        st.write("Users table has been created.")
-    except Exception as e:
-        st.error(f"Error creating users table: {e}")
-
-create_users_table()
+# Initialize Supabase client
+supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
 
 class UserAuth:
     def __init__(self):
@@ -97,7 +77,7 @@ class UserAuth:
 
         st.button("New User? Sign Up", on_click=self.show_signup_form)
         st.button("Forgot Password?", on_click=self.show_reset_password_form)
-        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
+        st.button("Forgot User ID?", on_click(self.show_retrieve_user_id_form))
 
     def show_admin_login_form(self):
         """Show the login form for the admin."""
@@ -112,19 +92,16 @@ class UserAuth:
         password = st.session_state.get("password")
 
         if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
-            # Admin logs in through the user tab, but we treat this as a user login
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
-            # Ensure admin dashboard and admin login tab do not appear in the user login
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
         else:
-            query = "SELECT password FROM users WHERE username = :username"
-            result = conn.session.execute(query, {'username': username}).fetchone()
-
-            if result:
-                st.write(f"Password hash stored in DB: {result.password}")
-                if hmac.compare_digest(self.hash_password(password), result.password):
+            result = supabase.from_("users").select("*").eq("username", username).single().execute()
+            user = result.data
+            if user:
+                stored_password = user.get("password")
+                if hmac.compare_digest(self.hash_password(password), stored_password):
                     st.session_state["is_authenticated"] = True
                     self.is_authenticated = True
                 else:
@@ -141,10 +118,9 @@ class UserAuth:
         admin_username = st.session_state.get("admin_username")
         admin_password = st.session_state.get("admin_password")
 
-        if admin_username == self.admin_user_id and hmac.compare_digest(admin_password, self.admin_password):
+        if admin_username == self.admin_user_id and hmac.compare_digest(self.hash_password(admin_password), self.admin_password):
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
-            # Reset user authentication if admin logs in directly
             st.session_state["is_authenticated"] = False
             self.is_authenticated = False
         else:
@@ -166,39 +142,23 @@ class UserAuth:
                     st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
-        """ Add a new user to the database."""
+        """Add a new user to the Supabase."""
         try:
             hashed_password = self.hash_password(password)
-            
-            # Insert the new user
-            query = '''
-                INSERT INTO users (username, email, dob, password)
-                VALUES (:username, :email, :dob, :password);
-            '''
-            conn.session.execute(query, {
-                'username': username,
-                'email': email,
-                'dob': dob,
-                'password': hashed_password
-            })
-            conn.session.commit()
-    
-            # Display the added user
-            user_check = conn.session.execute("SELECT * FROM users WHERE username = :username", {'username': username}).fetchone()
-            
-            st.write(f"Inserted user: {user_check}")
-            
-            if user_check:
-                st.success("User registered successfully!")
-                self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
-            else:
-                st.error("User registration failed.")
+            user_data = {
+                "username": username,
+                "email": email,
+                "dob": dob,
+                "password": hashed_password
+            }
+            supabase.from_("users").insert(user_data).execute()
+            st.success("User registered successfully!")
+            self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
         except Exception as e:
             st.error(f"An error occurred: {e}")
 
-
     def show_reset_password_form(self):
-        """ Show the form to reset the password."""
+        """Show the form to reset the password."""
         st.session_state["show_signup_form"] = False
         with st.form("Reset Password Form"):
             email = st.text_input("User Email")
@@ -212,23 +172,18 @@ class UserAuth:
                     st.error("Passwords do not match.")
 
     def reset_password(self, email, dob, new_password):
-        """ Reset a user's password."""
-        query = "SELECT * FROM users WHERE email = :email AND dob = :dob"
-        user = conn.session.execute(query, {'email': email, 'dob': dob}).fetchone()
-
+        """Reset a user's password."""
+        user_query = supabase.from_("users").select("*").eq("email", email).eq("dob", dob).single().execute()
+        user = user_query.data
         if user:
-            update_query = 'UPDATE users SET password = :password WHERE email = :email'
-            conn.session.execute(update_query, {
-                'password': self.hash_password(new_password),
-                'email': email
-            })
-            conn.session.commit()
+            hashed_password = self.hash_password(new_password)
+            supabase.from_("users").update({"password": hashed_password}).eq("email", email).execute()
             st.success("Password reset successfully.")
         else:
             st.error("Invalid Email or Date of Birth.")
 
     def show_retrieve_user_id_form(self):
-        """ Show the form to retrieve a user ID based on the date of birth."""
+        """Show the form to retrieve a user ID based on the date of birth."""
         st.session_state["show_signup_form"] = False
         with st.form("Retrieve User ID Form"):
             dob = st.text_input("Date of Birth (ddmmyy)")
@@ -237,27 +192,22 @@ class UserAuth:
 
     def retrieve_user_id(self, dob):
         """Retrieve and display the user ID(s) associated with the given date of birth."""
-        query = 'SELECT username FROM users WHERE dob = :dob'
-        found_users = conn.session.execute(query, {'dob': dob}).fetchall()
-
-        if found_users:
-            user_ids = ", ".join([user.username for user in found_users])
+        users_query = supabase.from_("users").select("username").eq("dob", dob).execute()
+        users = users_query.data
+        if users:
+            user_ids = ", ".join([user["username"] for user in users])
             st.success(f"User ID(s) found: {user_ids}")
         else:
             st.error("No user found with the given Date of Birth.")
 
     def admin_view_all_users(self):
         """Allow the admin to view all users in the database."""
-        query = 'SELECT username, email, dob FROM users'
-        users = conn.session.execute(query).fetchall()
-    
-        # Check the actual contents returned
-        st.write(f"Fetched users: {users}")
-    
+        users_query = supabase.from_("users").select("username, email, dob").execute()
+        users = users_query.data
         if users:
             st.write("Current Users in the Database:")
             for user in users:
-                st.write(f"Username: {user.username}, Email: {user.email}, DOB: {user.dob}")
+                st.write(f"Username: {user['username']}, Email: {user['email']}, DOB: {user['dob']}")
         else:
             st.warning("No users found in the database.")
 
@@ -266,7 +216,6 @@ class UserAuth:
         st.sidebar.write("## Admin Dashboard")
         if st.sidebar.button("View All Users"):
             self.admin_view_all_users()
-
 
 class StockAnalysisApp:
     def __init__(self):
@@ -413,10 +362,6 @@ class StockAnalysisApp:
 
     def show_bollinger_bands(self):
         st.header('**Bollinger Bands**')
-        st.markdown('''
-        Bollinger Bands are one of the useful tools in stock analysis to decide when to buy or sell a stock. They show if the stock is priced too high or too low. If the stock price falls below the lower band, it might mean the stock is too cheap and could go up soon. 
-        If the price rises above the upper band, it might mean the stock is too expensive and could drop in price.
-        ''')
         quant_fig = cf.QuantFig(self.ticker_history, title='Bollinger Bands Chart', legend='top', name=self.selected_ticker)
         quant_fig.add_bollinger_bands()
         fig = quant_fig.iplot(asFigure=True)
@@ -424,12 +369,6 @@ class StockAnalysisApp:
 
     def show_macd(self):
         st.header('**MACD (Moving Average Convergence Divergence)**')
-        st.markdown('''
-        The Moving Average Convergence Divergence (MACD) is a tool that helps investors know when to buy or sell stocks. 
-        To get the MACD line, subtract the 26-day Exponential Moving Average (EMA) from the 12-day EMA. Then, the signal line is made by taking a 9-day EMA of the MACD line.
-        When the MACD line crosses above the signal line, it means that the price might go up potentially. 
-        And when the MACD line goes below the signal line, it means that the price may potentially go down and traders can sell the stock.
-        ''')
         quant_fig_macd = cf.QuantFig(self.ticker_history, title="MACD Chart", legend='top', name=self.selected_ticker)
         quant_fig_macd.add_macd()
         fig_macd = quant_fig_macd.iplot(asFigure=True)
@@ -437,14 +376,9 @@ class StockAnalysisApp:
 
     def show_rsi(self):
         st.header('**Relative Strength Index (RSI)**')
-        st.markdown('''
-        The RSI is a tool that tracks how fast and how much prices change. It has a scale from 0 to 100. 
-        If the RSI goes above 70, it means that the stock may be overpriced which happens when it is overbought. 
-        If the RSI is below 30, it means that the stock price may be too low or oversold.
-        ''')
         quant_fig_rsi = cf.QuantFig(self.ticker_history, title="RSI Chart", legend='top', name=self.selected_ticker)
         quant_fig_rsi.add_rsi(periods=14, showbands=False)
-        fig_rsi = quant_fig_rsi.iplot(asFigure=True)
+        fig_rsi = quant_fig_rsi.iplot(asFigure(True))
         st.plotly_chart(fig_rsi)
 
     def show_analyst_ratings(self):
@@ -457,8 +391,7 @@ class StockAnalysisApp:
 
     def show_trading_volume_chart(self):
         st.header('**Trading Volume**')
-        volume_chart = self.ticker_history['Volume'].iplot(asFigure=True, kind='bar', xTitle='Date', yTitle='Volume',
-                                                           title='Trading Volume', theme='pearl')
+        volume_chart = self.ticker_history['Volume'].iplot(asFigure=True, kind='bar', xTitle='Date', yTitle='Volume', title='Trading Volume', theme='pearl')
         st.plotly_chart(volume_chart, use_container_width=True)
 
     def show_income_statement(self):
@@ -475,3 +408,4 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
+
