@@ -17,17 +17,6 @@ conn = st.connection("supabase",type=SupabaseConnection)
 # Initialize Supabase client
 # supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
 
-def create_users_table():
-    """Ensure the users table exists in Supabase."""
-    try:
-        # Check if the table exists by trying to select from it
-        result = supabase.table("users").select("*").limit(1).execute()
-        st.write("Users table is ready.")
-    except Exception as e:
-        st.error(f"Error ensuring users table exists: {e}")
-
-create_users_table()
-
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
