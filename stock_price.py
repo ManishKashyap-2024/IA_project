@@ -132,6 +132,9 @@ class UserAuth:
         if admin_username == self.admin_user_id and hmac.compare_digest(admin_password, self.admin_password):
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
+            # Reset user authentication if admin logs in directly
+            st.session_state["is_authenticated"] = False
+            self.is_authenticated = False
         else:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
@@ -285,6 +288,10 @@ class StockAnalysisApp:
         elif st.session_state.get("is_authenticated"):
             # Show the stock analysis only if user is authenticated
             self.stock_analysis()
+
+        elif st.session_state.get("is_admin_authenticated"):
+            # Show the admin dashboard if admin is authenticated
+            self.auth.admin_dashboard()
 
     def stock_analysis(self):
         st.markdown('''
