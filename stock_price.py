@@ -13,6 +13,23 @@ from supabase import create_client, Client
 # Initialize Supabase client
 supabase: Client = create_client(st.secrets["supabase"]["url"], st.secrets["supabase"]["key"])
 
+def create_users_table():
+    """Create the users table in Supabase if it doesn't exist."""
+    try:
+        existing_tables = supabase.table("users").select("*").execute()
+        if not existing_tables.data:
+            # Create the table if it does not exist
+            supabase.table("users").insert([
+                {"username": "sample_user", "email": "sample@example.com", "dob": "010190", "password": "hashed_password"}
+            ]).execute()
+            # Delete the sample entry to keep the table clean
+            supabase.table("users").delete().eq("username", "sample_user").execute()
+        st.write("Supabase users table is ready.")
+    except Exception as e:
+        st.error(f"Error ensuring users table exists: {e}")
+
+create_users_table()
+
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
@@ -73,18 +90,24 @@ class UserAuth:
         with st.form("Login Form"):
             st.text_input("User ID", key="username")
             st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=self.verify_user_password)
+            login_button = st.form_submit_button("Log in")
+
+        if login_button:
+            self.verify_user_password()
 
         st.button("New User? Sign Up", on_click=self.show_signup_form)
         st.button("Forgot Password?", on_click=self.show_reset_password_form)
-        st.button("Forgot User ID?", on_click(self.show_retrieve_user_id_form))
+        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
 
     def show_admin_login_form(self):
         """Show the login form for the admin."""
         with st.form("Admin Login Form"):
             st.text_input("Admin ID", key="admin_username")
             st.text_input("Password", type="password", key="admin_password")
-            st.form_submit_button("Log in", on_click=self.verify_admin_password)
+            admin_login_button = st.form_submit_button("Log in")
+
+        if admin_login_button:
+            self.verify_admin_password()
 
     def verify_user_password(self):
         """Verify the user's password."""
@@ -97,7 +120,7 @@ class UserAuth:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
         else:
-            result = supabase.from_("users").select("*").eq("username", username).single().execute()
+            result = supabase.table("users").select("*").eq("username", username).single().execute()
             user = result.data
             if user:
                 stored_password = user.get("password")
@@ -135,11 +158,12 @@ class UserAuth:
             username = st.text_input("Choose a Username (User ID)")
             password = st.text_input("Choose a Password", type="password")
             confirm_password = st.text_input("Confirm Password", type="password")
-            if st.form_submit_button("Sign Up"):
-                if password == confirm_password:
-                    self.add_user(username, email, dob, password)
-                else:
-                    st.error("Passwords do not match.")
+            signup_button = st.form_submit_button("Sign Up")
+
+        if signup_button and password == confirm_password:
+            self.add_user(username, email, dob, password)
+        elif signup_button:
+            st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
         """Add a new user to the Supabase."""
@@ -151,7 +175,7 @@ class UserAuth:
                 "dob": dob,
                 "password": hashed_password
             }
-            supabase.from_("users").insert(user_data).execute()
+            supabase.table("users").insert(user_data).execute()
             st.success("User registered successfully!")
             self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
         except Exception as e:
@@ -165,19 +189,20 @@ class UserAuth:
             dob = st.text_input("Date of Birth (ddmmyy)")
             new_password = st.text_input("New Password", type="password")
             confirm_password = st.text_input("Confirm New Password", type="password")
-            if st.form_submit_button("Reset Password"):
-                if new_password == confirm_password:
-                    self.reset_password(email, dob, new_password)
-                else:
-                    st.error("Passwords do not match.")
+            reset_button = st.form_submit_button("Reset Password")
+
+        if reset_button and new_password == confirm_password:
+            self.reset_password(email, dob, new_password)
+        elif reset_button:
+            st.error("Passwords do not match.")
 
     def reset_password(self, email, dob, new_password):
         """Reset a user's password."""
-        user_query = supabase.from_("users").select("*").eq("email", email).eq("dob", dob).single().execute()
+        user_query = supabase.table("users").select("*").eq("email", email).eq("dob", dob).single().execute()
         user = user_query.data
         if user:
             hashed_password = self.hash_password(new_password)
-            supabase.from_("users").update({"password": hashed_password}).eq("email", email).execute()
+            supabase.table("users").update({"password": hashed_password}).eq("email", email).execute()
             st.success("Password reset successfully.")
         else:
             st.error("Invalid Email or Date of Birth.")
@@ -187,23 +212,26 @@ class UserAuth:
         st.session_state["show_signup_form"] = False
         with st.form("Retrieve User ID Form"):
             dob = st.text_input("Date of Birth (ddmmyy)")
-            if st.form_submit_button("Retrieve User ID"):
-                self.retrieve_user_id(dob)
+            retrieve_button = st.form_submit_button("Retrieve User ID")
+
+        if retrieve_button:
+            self.retrieve_user_id(dob)
 
     def retrieve_user_id(self, dob):
         """Retrieve and display the user ID(s) associated with the given date of birth."""
-        users_query = supabase.from_("users").select("username").eq("dob", dob).execute()
-        users = users_query.data
-        if users:
-            user_ids = ", ".join([user["username"] for user in users])
+        user_query = supabase.table("users").select("username").eq("dob", dob).execute()
+        found_users = user_query.data
+        if found_users:
+            user_ids = ", ".join([user["username"] for user in found_users])
             st.success(f"User ID(s) found: {user_ids}")
         else:
             st.error("No user found with the given Date of Birth.")
 
     def admin_view_all_users(self):
-        """Allow the admin to view all users in the database."""
-        users_query = supabase.from_("users").select("username, email, dob").execute()
+        """Allow the admin to view all users in the Supabase."""
+        users_query = supabase.table("users").select("username, email, dob").execute()
         users = users_query.data
+        st.write(f"Fetched users: {users}")
         if users:
             st.write("Current Users in the Database:")
             for user in users:
@@ -242,21 +270,17 @@ class StockAnalysisApp:
                 self.auth.validate_user_password()
 
                 if st.session_state.get("is_authenticated"):
-                    # If the admin logs in as a user, they should not see the admin dashboard
                     st.session_state["is_admin_authenticated"] = False
                     self.stock_analysis()
 
             with tab2:
                 if self.auth.validate_admin_password():
-                    # Admin-specific functionality here, only visible after admin login
                     self.auth.admin_dashboard()
 
         elif st.session_state.get("is_authenticated"):
-            # Show the stock analysis only if user is authenticated
             self.stock_analysis()
 
         elif st.session_state.get("is_admin_authenticated"):
-            # Show the admin dashboard if admin is authenticated
             self.auth.admin_dashboard()
 
     def stock_analysis(self):
@@ -275,7 +299,7 @@ class StockAnalysisApp:
 
         if st.button('Show Bollinger Bands'):
             st.session_state.bollinger_bands = True
-        
+
         if st.session_state.bollinger_bands:
             self.show_bollinger_bands()
 
@@ -311,7 +335,7 @@ class StockAnalysisApp:
 
         if st.button('Show Ticker Data'):
             st.session_state.ticker_data = True
-            
+
         if st.session_state.ticker_data:
             self.show_ticker_data()
 
@@ -378,7 +402,7 @@ class StockAnalysisApp:
         st.header('**Relative Strength Index (RSI)**')
         quant_fig_rsi = cf.QuantFig(self.ticker_history, title="RSI Chart", legend='top', name=self.selected_ticker)
         quant_fig_rsi.add_rsi(periods=14, showbands=False)
-        fig_rsi = quant_fig_rsi.iplot(asFigure(True))
+        fig_rsi = quant_fig_rsi.iplot(asFigure=True)
         st.plotly_chart(fig_rsi)
 
     def show_analyst_ratings(self):
@@ -408,4 +432,3 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
-
