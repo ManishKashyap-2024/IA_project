@@ -271,15 +271,12 @@ class StockAnalysisApp:
             self.auth.validate_user_password()
 
         with tab2:
-            self.auth.validate_admin_password()
+            if self.auth.validate_admin_password():
+                self.auth.admin_dashboard()
 
         if st.session_state.get("is_authenticated"):
-            # Add your stock analysis functionality here
+            # Stock analysis functionality here
             self.stock_analysis()
-
-        if st.session_state.get("is_admin_authenticated"):
-            # Admin-specific functionality
-            self.auth.admin_dashboard()
 
     def stock_analysis(self):
         st.markdown('''
@@ -446,3 +443,4 @@ class StockAnalysisApp:
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
+
