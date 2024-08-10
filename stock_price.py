@@ -8,9 +8,25 @@ import hmac
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String
 
 # Create the SQL connection to user_db as specified in your secrets file.
 conn = st.connection('user_db', type='sql')
+
+# Create users table if it doesn't exist
+with conn.session as s:
+    s.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            email TEXT UNIQUE,
+            dob TEXT,
+            password TEXT
+        );
+    ''')
+    s.commit()
+
+st.write("Users table has been created.")
 
 class UserAuth:
     def __init__(self):
