@@ -5,43 +5,20 @@ import cufflinks as cf
 import datetime
 import hashlib
 import hmac
-import sqlite3
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Function to connect to the SQLite database
-def get_db_connection():
-    conn = sqlite3.connect('users.db')
-    conn.row_factory = sqlite3.Row  # Access rows as dictionaries
-    return conn
-
-# Function to create the users table if it doesn't exist
-def create_user_table():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT NOT NULL,
-            dob TEXT NOT NULL,
-            password TEXT NOT NULL
-        );
-    ''')
-    conn.commit()
-    conn.close()
-
-# Call the function to ensure the table is created
-create_user_table()
+# Create the SQL connection to user_db as specified in your secrets file.
+conn = st.connection('user_db', type='sql')
 
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
         self.is_admin_authenticated = st.session_state.get("is_admin_authenticated", False)
-        self.admin_email = st.secrets["admin_email"]
-        self.admin_password = st.secrets["admin_password"]
-        self.admin_user_id = st.secrets["admin_user_id"]
+        self.admin_email = st.secrets["admin"]["email"]
+        self.admin_password = st.secrets["admin"]["password"]
+        self.admin_user_id = st.secrets["admin"]["user_id"]
 
     def hash_password(self, password):
         """Hash a password using SHA256."""
@@ -120,13 +97,10 @@ class UserAuth:
             self.is_authenticated = True
             self.is_admin_authenticated = True
         else:
-            conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute('SELECT password FROM users WHERE username = ?', (username,))
-            result = cur.fetchone()
-            conn.close()
+            query = "SELECT password FROM users WHERE username = :username"
+            result = conn.session.execute(query, {'username': username}).fetchone()
 
-            if result and hmac.compare_digest(self.hash_password(password), result["password"]):
+            if result and hmac.compare_digest(self.hash_password(password), result.password):
                 st.session_state["is_authenticated"] = True
                 self.is_authenticated = True
             else:
@@ -147,7 +121,6 @@ class UserAuth:
 
     def show_signup_form(self):
         """Show the sign-up form for new users."""
-        st.session_state["show_signup_form"] = True
         with st.form("Sign Up Form"):
             email = st.text_input("Email")
             dob = st.text_input("Date of Birth (ddmmyy)")
@@ -157,28 +130,27 @@ class UserAuth:
             if st.form_submit_button("Sign Up"):
                 if password == confirm_password:
                     self.add_user(username, email, dob, password)
-                    st.session_state["show_signup_form"] = False
                 else:
                     st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
-        """Add a new user."""
-        conn = get_db_connection()
-        cur = conn.cursor()
-
+        """Add a new user to the database."""
         try:
-            cur.execute('''
+            query = '''
                 INSERT INTO users (username, email, dob, password)
-                VALUES (?, ?, ?, ?);
-            ''', (username, email, dob, self.hash_password(password)))
-
-            conn.commit()
+                VALUES (:username, :email, :dob, :password);
+            '''
+            conn.session.execute(query, {
+                'username': username,
+                'email': email,
+                'dob': dob,
+                'password': self.hash_password(password)
+            })
+            conn.session.commit()
             st.success("User registered successfully!")
             self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
-        except sqlite3.IntegrityError:
-            st.error("Username or Email already exists.")
-        finally:
-            conn.close()
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
@@ -196,19 +168,19 @@ class UserAuth:
 
     def reset_password(self, email, dob, new_password):
         """Reset a user's password."""
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM users WHERE email = ? AND dob = ?', (email, dob))
-        user = cur.fetchone()
+        query = "SELECT * FROM users WHERE email = :email AND dob = :dob"
+        user = conn.session.execute(query, {'email': email, 'dob': dob}).fetchone()
 
         if user:
-            cur.execute('UPDATE users SET password = ? WHERE email = ?',
-                        (self.hash_password(new_password), email))
-            conn.commit()
+            update_query = 'UPDATE users SET password = :password WHERE email = :email'
+            conn.session.execute(update_query, {
+                'password': self.hash_password(new_password),
+                'email': email
+            })
+            conn.session.commit()
             st.success("Password reset successfully.")
         else:
             st.error("Invalid Email or Date of Birth.")
-        conn.close()
 
     def show_retrieve_user_id_form(self):
         """Show the form to retrieve a user ID based on the date of birth."""
@@ -220,29 +192,33 @@ class UserAuth:
 
     def retrieve_user_id(self, dob):
         """Retrieve and display the user ID(s) associated with the given date of birth."""
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT username FROM users WHERE dob = ?', (dob,))
-        found_users = cur.fetchall()
-        conn.close()
+        query = 'SELECT username FROM users WHERE dob = :dob'
+        found_users = conn.session.execute(query, {'dob': dob}).fetchall()
 
         if found_users:
-            user_ids = ", ".join([user["username"] for user in found_users])
+            user_ids = ", ".join([user.username for user in found_users])
             st.success(f"User ID(s) found: {user_ids}")
         else:
             st.error("No user found with the given Date of Birth.")
 
     def admin_view_all_users(self):
         """Allow the admin to view all users in the database."""
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute('SELECT * FROM users')
-        users = cur.fetchall()
-        conn.close()
+        query = 'SELECT username, email, dob FROM users'
+        users = conn.session.execute(query).fetchall()
 
-        st.write("Current Users in the Database:")
-        for user in users:
-            st.write(dict(user))
+        if users:
+            st.write("Current Users in the Database:")
+            for user in users:
+                st.write(f"Username: {user.username}, Email: {user.email}, DOB: {user.dob}")
+        else:
+            st.warning("No users found in the database.")
+
+    def admin_dashboard(self):
+        """Show the admin dashboard in the sidebar."""
+        with st.sidebar:
+            st.write("## Admin Dashboard")
+            if st.button("View All Users"):
+                self.admin_view_all_users()
 
 
 class StockAnalysisApp:
@@ -264,81 +240,75 @@ class StockAnalysisApp:
     def run(self):
         tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
-        # User login tab
         with tab1:
-            if not self.auth.validate_user_password():
-                st.stop()
+            self.auth.validate_user_password()
 
-            self.show_app_title()
-            self.set_date_inputs()
-            self.choose_ticker()
-            self.fetch_ticker_data()
-            self.show_stock_info()
-            self.show_financial_metrics()
-
-            self.init_state_variables()
-
-            if st.button('Show Bollinger Bands'):
-                st.session_state.bollinger_bands = True
-            
-            if st.session_state.bollinger_bands:
-                self.show_bollinger_bands()
-
-            if st.button('Show MACD Chart'):
-                st.session_state.macd = True
-
-            if st.session_state.macd:
-                self.show_macd()
-
-            if st.button('Show RSI'):
-                st.session_state.rsi = True
-
-            if st.session_state.rsi:
-                self.show_rsi()
-
-            if st.button('Show Analyst Ratings'):
-                st.session_state.analyst_ratings = True
-
-            if st.session_state.analyst_ratings:
-                self.show_analyst_ratings()
-
-            if st.button('Show Trading Volume Chart'):
-                st.session_state.trading_volume = True
-
-            if st.session_state.trading_volume:
-                self.show_trading_volume_chart()
-
-            if st.button('Show Income Statement'):
-                st.session_state.income_statement = True
-
-            if st.session_state.income_statement:
-                self.show_income_statement()
-
-            if st.button('Show Ticker Data'):
-                st.session_state.ticker_data = True
-                
-            if st.session_state.ticker_data:
-                self.show_ticker_data()
-
-        # Admin login tab
         with tab2:
-            if not self.auth.validate_admin_password():
-                st.stop()
+            self.auth.validate_admin_password()
 
-            self.show_admin_sidebar()
+        if st.session_state.get("is_authenticated"):
+            # Add your stock analysis functionality here
+            self.stock_analysis()
 
-    def show_admin_sidebar(self):
-        st.sidebar.title("Admin Dashboard")
-        st.sidebar.write("Welcome, Admin!")
-        if st.sidebar.button("View All Users"):
-            self.auth.admin_view_all_users()
+        if st.session_state.get("is_admin_authenticated"):
+            # Admin-specific functionality
+            self.auth.admin_dashboard()
 
-    def show_app_title(self):
+    def stock_analysis(self):
         st.markdown('''
         # Stock Analysis Application
         One-stop shop for getting the key insights on your selected stocks at your fingertips!
         ''')
         st.write('---')
+        self.set_date_inputs()
+        self.choose_ticker()
+        self.fetch_ticker_data()
+        self.show_stock_info()
+        self.show_financial_metrics()
+
+        self.init_state_variables()
+
+        if st.button('Show Bollinger Bands'):
+            st.session_state.bollinger_bands = True
+        
+        if st.session_state.bollinger_bands:
+            self.show_bollinger_bands()
+
+        if st.button('Show MACD Chart'):
+            st.session_state.macd = True
+
+        if st.session_state.macd:
+            self.show_macd()
+
+        if st.button('Show RSI'):
+            st.session_state.rsi = True
+
+        if st.session_state.rsi:
+            self.show_rsi()
+
+        if st.button('Show Analyst Ratings'):
+            st.session_state.analyst_ratings = True
+
+        if st.session_state.analyst_ratings:
+            self.show_analyst_ratings()
+
+        if st.button('Show Trading Volume Chart'):
+            st.session_state.trading_volume = True
+
+        if st.session_state.trading_volume:
+            self.show_trading_volume_chart()
+
+        if st.button('Show Income Statement'):
+            st.session_state.income_statement = True
+
+        if st.session_state.income_statement:
+            self.show_income_statement()
+
+        if st.button('Show Ticker Data'):
+            st.session_state.ticker_data = True
+            
+        if st.session_state.ticker_data:
+            self.show_ticker_data()
 
     def set_date_inputs(self):
         self.start_date = st.sidebar.date_input("Start Date", self.start_date)
@@ -445,8 +415,6 @@ class StockAnalysisApp:
     def show_ticker_data(self):
         st.header('**Ticker Data**')
         st.write(self.sorted_ticker_history)
-
-        st.markdown('Stock Analysis App by *Your Name*')
 
 if __name__ == "__main__":
     app = StockAnalysisApp()
