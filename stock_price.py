@@ -58,13 +58,22 @@ class UserAuth:
 
     def verify_user_password(self):
         """Check user credentials."""
-        # User credential verification logic
-        if st.session_state["username"] == "correct_user" and st.session_state["password"] == "correct_password":
+        # Check if the entered username is the admin
+        if st.session_state["username"] == st.secrets["admin"]["admin_id"] and st.session_state["password"] == st.secrets["admin"]["admin_password"]:
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
+            st.session_state["is_admin_authenticated"] = True
+            self.is_admin_authenticated = True
         else:
-            st.session_state["is_authenticated"] = False
-            self.is_authenticated = False
+            # User credential verification logic for non-admin users (use your database lookup here)
+            with engine.connect() as connection:
+                result = connection.execute(text("SELECT * FROM users WHERE username = :username"), {"username": st.session_state["username"]}).fetchone()
+                if result and hmac.compare_digest(result["password"], st.session_state["password"]):
+                    st.session_state["is_authenticated"] = True
+                    self.is_authenticated = True
+                else:
+                    st.session_state["is_authenticated"] = False
+                    self.is_authenticated = False
 
     def verify_admin_password(self):
         """Check admin credentials."""
