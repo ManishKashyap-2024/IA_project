@@ -72,28 +72,29 @@ class UserAuth:
         self.show_login_form()
 
         if "is_authenticated" in st.session_state and not st.session_state["is_authenticated"]:
-            st.error("Invalid username or password.")
+            st.error("Invalid User ID or password.")
 
         return self.is_authenticated
 
     def show_login_form(self):
         """Show the login form."""
-        with st.form("Login Form"):
-            st.text_input("Email", key="email")
-            st.text_input("Password", type="password", key="password")
-            st.form_submit_button("Log in", on_click=self.verify_password)
+        if not st.session_state.get("show_signup_form", False):
+            with st.form("Login Form"):
+                st.text_input("User ID", key="username")
+                st.text_input("Password", type="password", key="password")
+                st.form_submit_button("Log in", on_click=self.verify_password)
 
-        st.button("New User? Sign Up", on_click=self.show_signup_form)
-        st.button("Forgot Password?", on_click=self.show_reset_password_form)
-        st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
+            st.button("New User? Sign Up", on_click=self.show_signup_form)
+            st.button("Forgot Password?", on_click=self.show_reset_password_form)
+            st.button("Forgot User ID?", on_click=self.show_retrieve_user_id_form)
 
     def verify_password(self):
         """Verify the entered password."""
-        email = st.session_state.get("email")
+        username = st.session_state.get("username")
         password = st.session_state.get("password")
 
         # Admin login case
-        if email == self.admin_email and hmac.compare_digest(password, self.admin_password):
+        if username == "admin" and hmac.compare_digest(password, self.admin_password):
             st.session_state["is_authenticated"] = True
             self.is_authenticated = True
             return
@@ -101,7 +102,7 @@ class UserAuth:
         # User login case
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT password FROM users WHERE email = ?', (email,))
+        cur.execute('SELECT password FROM users WHERE username = ?', (username,))
         result = cur.fetchone()
         conn.close()
 
@@ -114,15 +115,17 @@ class UserAuth:
 
     def show_signup_form(self):
         """Show the sign-up form for new users."""
+        st.session_state["show_signup_form"] = True
         with st.form("Sign Up Form"):
             email = st.text_input("Email")
             dob = st.text_input("Date of Birth (ddmmyy)")
-            username = st.text_input("Choose a Username")
+            username = st.text_input("Choose a Username (User ID)")
             password = st.text_input("Choose a Password", type="password")
             confirm_password = st.text_input("Confirm Password", type="password")
             if st.form_submit_button("Sign Up"):
                 if password == confirm_password:
                     self.add_user(username, email, dob, password)
+                    st.session_state["show_signup_form"] = False
                 else:
                     st.error("Passwords do not match.")
 
@@ -147,6 +150,7 @@ class UserAuth:
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
+        st.session_state["show_signup_form"] = False
         with st.form("Reset Password Form"):
             email = st.text_input("User Email")
             dob = st.text_input("Date of Birth (ddmmyy)")
@@ -176,6 +180,7 @@ class UserAuth:
 
     def show_retrieve_user_id_form(self):
         """Show the form to retrieve a user ID based on the date of birth."""
+        st.session_state["show_signup_form"] = False
         with st.form("Retrieve User ID Form"):
             dob = st.text_input("Date of Birth (ddmmyy)")
             if st.form_submit_button("Retrieve User ID"):
