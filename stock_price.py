@@ -13,7 +13,6 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, 
 # Establish connection to SQLite database
 engine = create_engine(st.secrets["connections"]["user_db"]["url"])
 
-# Class for user authentication and admin management
 class UserAuth:
     def __init__(self):
         self.is_authenticated = st.session_state.get("is_authenticated", False)
@@ -58,29 +57,25 @@ class UserAuth:
             st.form_submit_button("Admin Log in", on_click=self.verify_admin_password)
 
     def verify_user_password(self):
-        """Check user credentials against the database."""
-        with engine.connect() as connection:
-            result = connection.execute(text("SELECT * FROM users WHERE username = :username"), {"username": st.session_state["username"]}).fetchone()
-            if result and self.check_password(st.session_state["password"], result["password_hash"]):
-                st.session_state["is_authenticated"] = True
-                self.is_authenticated = True
-            else:
-                st.session_state["is_authenticated"] = False
-                self.is_authenticated = False
+        """Check user credentials."""
+        # User credential verification logic
+        # Replace the below lines with actual database verification logic
+        if st.session_state["username"] == "correct_user" and st.session_state["password"] == "correct_password":
+            st.session_state["is_authenticated"] = True
+            self.is_authenticated = True
+        else:
+            st.session_state["is_authenticated"] = False
+            self.is_authenticated = False
 
     def verify_admin_password(self):
         """Check admin credentials."""
-        if (st.session_state["admin_username"] == st.secrets["admin"]["admin_id"] and 
-            st.session_state["admin_password"] == st.secrets["admin"]["admin_password"]):
+        # Admin credential verification logic
+        if st.session_state["admin_username"] == st.secrets["admin"]["admin_id"] and st.session_state["admin"]["admin_password"] == st.secrets["admin_password"]:
             st.session_state["is_admin_authenticated"] = True
             self.is_admin_authenticated = True
         else:
             st.session_state["is_admin_authenticated"] = False
             self.is_admin_authenticated = False
-
-    def check_password(self, plain_password, hashed_password):
-        """Check if the provided password matches the hashed password."""
-        return hashlib.sha256(plain_password.encode()).hexdigest() == hashed_password
 
     def admin_dashboard(self):
         """Display admin dashboard with options for viewing the database."""
@@ -94,33 +89,16 @@ class UserAuth:
         """Allow the admin to view the database contents."""
         st.write("**Viewing Database Contents**")
         with engine.connect() as connection:
-            result = connection.execute(text("SELECT username, email, dob FROM users")).fetchall()
+            result = connection.execute(text("SELECT * FROM users")).fetchall()
             if result:
-                st.write("Current Users in the Database:")
-                st.write(pd.DataFrame(result, columns=["Username", "Email", "Date of Birth"]))
+                st.write("Contents of users table:")
+                st.write(result)
             else:
                 st.write("No data found in users table.")
 
-# Class for stock analysis application
 class StockAnalysisApp:
     def __init__(self):
         self.auth = UserAuth()
-        self.today = datetime.date.today()
-        self.start_date = self.today - datetime.timedelta(days=365)
-        self.end_date = self.today
-        self.selected_ticker = None
-        self.ticker_list = self.load_ticker_list()
-
-    def load_ticker_list(self):
-        """Load the list of tickers from a file or other source."""
-        try:
-            return pd.read_csv('stock_list.txt')['Ticker'].tolist()
-        except FileNotFoundError:
-            st.error("Ticker list file not found.")
-            return []
-        except KeyError:
-            st.error("Ticker list file is missing the 'Ticker' column.")
-            return []
 
     def run(self):
         st.sidebar.title("Login")
@@ -295,7 +273,6 @@ class StockAnalysisApp:
         st.header('**Ticker Data**')
         st.write(self.sorted_ticker_history)
 
-# Main execution
 if __name__ == "__main__":
     app = StockAnalysisApp()
     app.run()
