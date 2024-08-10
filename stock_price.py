@@ -107,11 +107,12 @@ class UserAuth:
         password = st.session_state.get("password")
 
         if username == self.admin_user_id and hmac.compare_digest(password, self.admin_password):
-            # Admin logs in through the user tab, give them full access
+            # Admin logs in through the user tab, but we treat this as a user login
             st.session_state["is_authenticated"] = True
-            st.session_state["is_admin_authenticated"] = True
             self.is_authenticated = True
-            self.is_admin_authenticated = True
+            # Ensure admin dashboard does not appear in the user login
+            st.session_state["is_admin_authenticated"] = False
+            self.is_admin_authenticated = False
         else:
             query = "SELECT password FROM users WHERE username = :username"
             result = conn.session.execute(query, {'username': username}).fetchone()
@@ -270,7 +271,8 @@ class StockAnalysisApp:
             self.auth.validate_user_password()
 
             if st.session_state.get("is_authenticated"):
-                # Stock analysis functionality here
+                # If the admin logs in as a user, they should not see the admin dashboard
+                st.session_state["is_admin_authenticated"] = False
                 self.stock_analysis()
 
         with tab2:
