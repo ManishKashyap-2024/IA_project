@@ -174,20 +174,34 @@ class UserAuth:
             st.error("Passwords do not match.")
 
     def add_user(self, username, email, dob, password):
-        """Add a new user to the Supabase."""
+        """ Add a new user to the Supabase database."""
         try:
             hashed_password = self.hash_password(password)
-            user_data = {
-                "username": username,
-                "email": email,
-                "dob": dob,
-                "password": hashed_password
+            
+            # Insert the new user into Supabase
+            data = {
+                'username': username,
+                'email': email,
+                'dob': dob,
+                'password': hashed_password
             }
-            supabase.table("users").insert(user_data).execute()
-            st.success("User registered successfully!")
-            self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
+            
+            # Debugging: Print data being inserted
+            st.write("Inserting data:", data)
+            
+            response = supabase.table("users").insert(data).execute()
+            
+            # Debugging: Check the response from Supabase
+            st.write("Supabase response:", response)
+            
+            if response.status_code == 201:
+                st.success("User registered successfully!")
+                self.send_email(email, "Registration Successful", f"Dear {username},\n\nYour registration was successful.")
+            else:
+                st.error(f"User registration failed with error: {response.error_message}")
         except Exception as e:
             st.error(f"An error occurred: {e}")
+
 
     def show_reset_password_form(self):
         """Show the form to reset the password."""
