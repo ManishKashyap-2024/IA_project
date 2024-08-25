@@ -41,10 +41,6 @@ def login():
                 connection.close()
 
 
-
-
-        
-
     # Tab 2: About
     with tab2:
         with st.form("Admin Login Form"):

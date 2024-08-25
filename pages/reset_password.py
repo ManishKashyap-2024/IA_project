@@ -28,7 +28,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
 
             col1, col2 = st.columns([1, 1])
             with col1:
-                password = st.text_input("New Password", type="password")
+                password         = st.text_input("New Password", type="password")
             with col2:
                 confirm_password = st.text_input("Confirm New Password", type="password")
 

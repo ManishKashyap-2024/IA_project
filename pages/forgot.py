@@ -20,7 +20,6 @@ with tab1:
         connection         = create_connection()
         success, user_data = forgot_password(connection, email)
         if success:
-            st.warning("This is in progress! Thanks")
             reset_password(email,user_data, connection)  # Use the result in another function
         else:
             st.error("Email not found.")
