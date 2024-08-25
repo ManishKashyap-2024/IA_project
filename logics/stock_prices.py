@@ -4,6 +4,7 @@ import pandas as pd
 import cufflinks as cf
 import datetime
 
+import os
 
 class StockAnalysisApp:
     def __init__(self):
@@ -13,9 +14,12 @@ class StockAnalysisApp:
         self.ticker_list     = self.load_ticker_list()  # Use cached method to load ticker list
         self.selected_ticker = None
 
-    # Temporarily remove caching to test the file reading
     def load_ticker_list(self):
-        return pd.read_csv('stock_list.txt')
+        base_dir = os.path.dirname(__file__)
+        file_path = os.path.join(base_dir, 'stock_list.txt')
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        return pd.read_csv(file_path)
 
 
     def init_state_variables(self):
