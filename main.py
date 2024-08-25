@@ -13,7 +13,7 @@ def main():
     st.sidebar.page_link("main.py",           label="Login",    icon="🔐")
     st.sidebar.page_link("pages/register.py", label="Register", icon="👤")
     st.sidebar.page_link("pages/forgot.py",   label="Forgot Creditional",   icon="❓")
- 
+
     login()
 
 if __name__ == "__main__":

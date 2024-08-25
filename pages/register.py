@@ -4,13 +4,13 @@ from logics.database import db_connection
 
 st.sidebar.page_link("main.py",           label="Login",    icon="🔐")
 st.sidebar.page_link("pages/register.py", label="Register", icon="👤")
-st.sidebar.page_link("pages/forgot.py",   label="Forgot",   icon="❓")
+st.sidebar.page_link("pages/forgot.py",   label="Forgot Creditional",   icon="❓")
 
 
-check_database_connectivity = st.checkbox('Database Connectivity')
+# check_database_connectivity = st.checkbox('Database Connectivity')
 
-if check_database_connectivity:
-    db_connection()
+# if check_database_connectivity:
+#     db_connection()
 
 with st.form("Sign Up Form"):
     email            = st.text_input("Email")

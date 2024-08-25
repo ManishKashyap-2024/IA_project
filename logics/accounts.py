@@ -3,6 +3,15 @@ from logics.database import *
 
 from streamlit_extras.switch_page_button import switch_page
 
+from cryptography.fernet import Fernet
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+
+from logics.send_email import send_email
+
 def login():
     # Create tabs
     tab1, tab2 = st.tabs(["User", "Admin"])
@@ -73,7 +82,7 @@ def add_user(username, first_name, last_name, email, dob, password):
         if not (email and first_name and last_name and dob and username):
             st.error("All fields are required!")
         elif check_unique_username_email(connection, username, email):
-            st.error("Username and Email already exists!")
+            st.error("Username and Email already exist!")
         elif check_unique_username(connection, username):
             st.error("Username already exists!")
         elif check_unique_email(connection, email):
@@ -81,12 +90,104 @@ def add_user(username, first_name, last_name, email, dob, password):
         else:
             # Insert the data into the database
             insert_user(connection, username, first_name, last_name, email, dob, password)
-    connection.close()
+        
+        # Close the connection only if it's not None
+        connection.close()
+    else:
+        st.error("Failed to connect to the database!")
     
 
+import uuid
+from datetime import datetime, timedelta
 
-def forgot_user_password():
-    st.warning("This will be added later")
+def generate_reset_token():
+    return str(uuid.uuid4())
+
+def reset_password(email, user_data, connection):
+    # Generate a secure token and expiry time
+    reset_token = generate_reset_token()
+    token_expiry = datetime.now() + timedelta(hours=1)  # Token valid for 1 hour
+
+    # Update the user's record with the reset token and expiry
+    try:
+        cursor = connection.cursor()
+        update_query = '''
+        UPDATE user_accounts
+        SET reset_token = %s, token_expiry = %s
+        WHERE email = %s
+        '''
+        cursor.execute(update_query, (reset_token, token_expiry, email))
+        connection.commit()
+        cursor.close()
+    except Error as e:
+        st.error(f"Error updating reset token: {e}")
+        return
+
+    # Send email with reset token link
+    first_name = user_data['first_name']
+    last_name = user_data['last_name']
+    username = user_data['username']
+    date_of_creation = user_data['date_of_creation']
+
+    subject = "Password Reset Request"
+    # reset_link = f"http://localhost:8501/reset?token={reset_token}"
+    reset_link = f"http://localhost:8501/reset"
+    body = f"""
+    Dear {first_name} {last_name},
+
+    We have received a request to reset the password for your account (Username: {username}) created on {date_of_creation}.
+
+    Please click the link below to reset your password:
+
+    {reset_link}
+
+    This link will expire in 1 hour. If you did not request this password reset, please contact our support team immediately.
+
+    Thank you for your prompt attention to this matter.
+    
+    Best regards,
+    Manish Kashyap
+    CEO
+    Stock Analysis
+    """
+    send_email(email, subject, body)
+    st.success("Password reset link has been sent to your email.")
+# def reset_password(email,user_data):
+#     st.write(user_data)
+#     first_name        = user_data['first_name']
+#     last_name         = user_data['last_name']
+#     username          = user_data['username']
+#     email             = user_data['email']
+#     dob               = user_data['dob']
+#     password          = user_data['password']
+#     date_of_creation  = user_data['date_of_creation']
+
+#     subject = "Request to forgot password"
+#     body    =   f"""
+#                     Dear {first_name} {last_name},
+
+#                     We have received a request to reset the password for your account (Username: {username}) due to a forgotten password. Your account was created on {date_of_creation}.
+
+#                     Please find your password below:
+
+#                     Password: {password}
+
+#                     To ensure the security of your account, we recommend updating your password immediately after logging in.
+
+#                     If you did not request this password reset, please contact our support team immediately.
+
+#                     Thank you for your prompt attention to this matter.
+                    
+#                     Best regards,
+#                     Manish Kashyap
+#                     CEO
+#                     Stock Analysis
+#                 """
+#     send_email(email, subject, body)
+
+
+
+
 
 def forgot_user_id():
     st.warning("This will be added later")

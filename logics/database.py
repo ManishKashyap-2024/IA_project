@@ -31,12 +31,13 @@ def check_table_exists(connection, table_name):
         return False
 
 
-# Function to create a table if it doesn't exist
 def create_table(connection):
     try:
         cursor = connection.cursor()
+        
+        # Create the table if it doesn't exist
         create_table_query = '''
-        CREATE TABLE user_accounts (
+        CREATE TABLE IF NOT EXISTS user_accounts (
             id INT AUTO_INCREMENT PRIMARY KEY,
             username VARCHAR(255) NOT NULL,
             first_name VARCHAR(255) NOT NULL,
@@ -44,15 +45,18 @@ def create_table(connection):
             email VARCHAR(255) NOT NULL,
             dob DATE NOT NULL,
             password VARCHAR(255) NOT NULL,
-            date_of_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            date_of_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            reset_token VARCHAR(255),
+            token_expiry TIMESTAMP
         )
         '''
         cursor.execute(create_table_query)
         connection.commit()
         cursor.close()
-        st.success("Table 'user_accounts' created successfully.")
+        st.success("Table 'user_accounts' created successfully, with support for password reset tokens.")
     except Error as e:
         st.error(f"Error creating table: {e}")
+        
 
 
 # Function to insert data into the table
@@ -124,18 +128,6 @@ def db_connection():
             st.info(f"Table '{table_name}' already exists.")
         connection.close()
 
-
-# def check_login_credentials(connection, user_id, password):
-#     try:
-#         cursor = connection.cursor()
-#         query = "SELECT * FROM user_accounts WHERE email = %s AND password = %s"
-#         cursor.execute(query, (user_id, password))
-#         result = cursor.fetchone()
-#         cursor.close()
-#         return result is not None
-#     except Error as e:
-#         st.error(f"Error checking login credentials: {e}")
-#         return False
 
 def check_login_credentials(connection, user_id, password):
     try:
@@ -231,7 +223,6 @@ def update_user_password(connection, email, password):
             # Update Streamlit session state
             st.session_state['password'] = password
    
-
             cursor.close()
             return f"User Password Updated Successfully For Email: {email}"
         else:
@@ -242,3 +233,20 @@ def update_user_password(connection, email, password):
         return None
 
 
+
+    
+def forgot_password(connection, email):
+    try:
+        cursor = connection.cursor(dictionary=True)
+        query  = "SELECT * FROM user_accounts WHERE email = %s"
+        cursor.execute(query, (email,))
+        result = cursor.fetchone()
+        cursor.close()
+        
+        if result:
+            return True, result  # Email exists, return True and user data
+        else:
+            return False, None  # Email does not exist, return False and None
+    except Error as e:
+        st.error(f"Error retrieving user information: {e}")
+        return False, None  # Return False and None in case of error

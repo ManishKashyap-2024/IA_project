@@ -10,8 +10,13 @@ class StockAnalysisApp:
         self.today = datetime.date.today()
         self.start_date      = self.today - datetime.timedelta(days=365)
         self.end_date        = self.today
-        self.ticker_list     = pd.read_csv('stock_list.txt')
+        self.ticker_list     = self.load_ticker_list()  # Use cached method to load ticker list
         self.selected_ticker = None
+
+    @st.cache_data  # Cache the ticker list to prevent multiple reads
+    def load_ticker_list(self):
+        return pd.read_csv('stock_list.txt')
+
 
     def init_state_variables(self):
         features = ['bollinger_bands', 'macd', 'rsi', 'analyst_ratings', 'trading_volume', 'income_statement', 'ticker_data']
