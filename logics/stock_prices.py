@@ -13,7 +13,7 @@ class StockAnalysisApp:
         self.ticker_list     = self.load_ticker_list()  # Use cached method to load ticker list
         self.selected_ticker = None
 
-    @st.cache_data  # Cache the ticker list to prevent multiple reads
+    # Temporarily remove caching to test the file reading
     def load_ticker_list(self):
         return pd.read_csv('stock_list.txt')
 
