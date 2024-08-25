@@ -32,8 +32,9 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             with col2:
                 confirm_password = st.text_input("Confirm New Password", type="password")
 
+            update_password_button = st.button("Update")
             # If the current password is provided, validate it
-            if current_password:
+            if current_password and update_password_button:
                 # Verify that the entered current password matches the stored hashed password
                 if bcrypt.checkpw(current_password.encode('utf-8'), user_password.encode('utf-8')):
                     # Now you can proceed to check if the new passwords match and process the password change
