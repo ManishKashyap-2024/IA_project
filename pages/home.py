@@ -34,8 +34,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             
 
             from logics.stock_prices import StockAnalysisApp
-            import os
-        
+
             app = StockAnalysisApp()
 
             app.init_state_variables()

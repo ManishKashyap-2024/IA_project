@@ -13,7 +13,7 @@ def login():
     with tab1:
         # Input fields for User ID and Password
         with st.form("Login Form"):
-            user_id_input       = st.text_input("User ID", key="user_id_input")
+            user_id_input       = st.text_input("User Email", key="user_email_input")
             user_password_input = st.text_input("Password", type="password", key="user_password_input")
             # Login button
             user_login_button = st.form_submit_button("Login")
@@ -57,6 +57,8 @@ def login():
 
             # Check if provided credentials match the stored credentials
             if admin_id_input == admin_id and admin_password_input == admin_password:
+                st.session_state['logged_in'] = True
+                st.session_state['user_id']   = admin_id
                 # Store admin_email in session state
                 st.session_state['admin_email'] = admin_email
                 switch_page("Admin")  # No need to pass admin_email as an argument now

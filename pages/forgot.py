@@ -5,7 +5,7 @@ from logics.database import create_connection
 
 st.sidebar.page_link("main.py",           label="Login",    icon="🔐")
 st.sidebar.page_link("pages/register.py", label="Register", icon="👤")
-st.sidebar.page_link("pages/forgot.py",   label="Forgot Creditional",   icon="❓")
+st.sidebar.page_link("pages/forgot.py",   label="Forgot Credential",   icon="❓")
 
 # Create tabs
 tab1, tab2 = st.tabs(["Forgot Password", "Forgot ID"])

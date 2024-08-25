@@ -4,7 +4,7 @@ from logics.database import db_connection
 
 st.sidebar.page_link("main.py",           label="Login",    icon="🔐")
 st.sidebar.page_link("pages/register.py", label="Register", icon="👤")
-st.sidebar.page_link("pages/forgot.py",   label="Forgot Creditional",   icon="❓")
+st.sidebar.page_link("pages/forgot.py",   label="Forgot Credential",   icon="❓")
 
 
 with st.form("Sign Up Form"):

@@ -31,21 +31,22 @@ def display_users(connection):
         st.error(f"Error retrieving user data: {e}")
 
 def admin_login():
+
     if 'admin_email' in st.session_state:
         admin_email = st.session_state['admin_email']
         st.sidebar.success(f"Welcome, {admin_email}")  
 
-    logout = st.sidebar.button("LogOut")
-    if logout:
-        switch_page("Main")
-
-
+        st.sidebar.page_link("pages/admin.py",      label="Admin", icon="👤")
+        st.sidebar.page_link("pages/admin_home.py", label="Home",  icon="🏠")
 
     connection = create_connection()
     if connection:
-        display_users(connection)
+        try:
+            display_users(connection)
+        finally:
+            connection.close()
     else:
-        connection.close()
+        print("Failed to establish a connection to the database.")
 
 
 
