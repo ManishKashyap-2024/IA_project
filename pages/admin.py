@@ -18,7 +18,7 @@ def display_users(connection):
         '''
         cursor.execute(fetch_users_query)
         users = cursor.fetchall()
-        
+
         if users:
             # Displaying the results in a table format
             st.write("### User Accounts")
@@ -29,6 +29,7 @@ def display_users(connection):
         cursor.close()
     except Error as e:
         st.error(f"Error retrieving user data: {e}")
+
 
 def admin_login():
 

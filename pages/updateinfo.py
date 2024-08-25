@@ -10,7 +10,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
     # Check if user_info is available in session state
     if 'user_info' in st.session_state:
         user_info = st.session_state['user_info']  # Access the stored user info
-        st.sidebar.success(f"Welcome, {user_info['last_name']}!")
+        st.sidebar.success(f"Welcome, {user_info['first_name']}!")
     else:
         # Establish a database connection
         connection = create_connection()

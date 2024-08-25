@@ -11,14 +11,14 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
     # Check if user_info is available in session state
     if 'user_info' in st.session_state:
         user_info     = st.session_state['user_info']  # Access the stored user info
-        st.sidebar.success(f"Welcome, {user_info['last_name']}!")
+        st.sidebar.success(f"Welcome, {user_info['first_name']}!")
     else:
         # Establish a database connection
         connection = create_connection()
         # Assume this function gets user information from the database
         user_info = get_user_info(connection, user_id)
         if user_info:
-            st.sidebar.success(f"Welcome, {user_info['last_name']}!")
+            st.sidebar.success(f"Welcome, {user_info['first_name']}!")
 
             user_password = user_info['password']  # Access the stored hashed password
             print("\n\n\n\t\t\t* HASHED PASSWORD from DATABASE ", user_password)

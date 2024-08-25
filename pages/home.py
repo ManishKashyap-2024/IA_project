@@ -20,7 +20,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
             user_info = get_user_info(connection, user_id)
 
             if user_info:
-                st.sidebar.success(f"Welcome, {user_info['last_name']}!")
+                st.sidebar.success(f"Welcome, {user_info['first_name']}!")
 
             else:
                 st.error("User information could not be retrieved.")
