@@ -1,10 +1,10 @@
 import streamlit as st
 from logics.database import create_connection  # Import your connection function
 from mysql.connector import Error
+import bcrypt
 
 
-
-st.title("This is Password Reset")
+st.set_page_config(layout='centered')
 
 
 def verify_token(connection, token):
@@ -35,18 +35,21 @@ def reset_password_page():
 
     if user_data:
         st.success("Token verified. Please reset your password.")
-        new_password = st.text_input("New Password", type="password")
+        new_password     = st.text_input("New Password", type="password")
         confirm_password = st.text_input("Confirm New Password", type="password")
         if st.button("Reset Password"):
             if new_password == confirm_password:
                 try:
+                    # Hash the password before storing it
+                    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+
                     cursor = connection.cursor()
                     update_query = '''
                     UPDATE user_accounts
                     SET password = %s, reset_token = NULL, token_expiry = NULL
                     WHERE id = %s
                     '''
-                    cursor.execute(update_query, (new_password, user_data['id']))
+                    cursor.execute(update_query, (hashed_password, user_data['id']))
                     connection.commit()
                     st.success("Password has been reset successfully.")
                 except Error as e:

@@ -1,7 +1,10 @@
 import streamlit as st
 from logics.database import create_connection, get_user_info, update_user_info
-# Check if user is logged in
 
+
+st.set_page_config(layout="wide")
+
+# Check if user is logged in
 if 'logged_in' in st.session_state and st.session_state['logged_in']:
     user_id = st.session_state.get('user_id', 'Guest')  # Retrieve user ID from session
     # Check if user_info is available in session state

@@ -147,39 +147,6 @@ def reset_password(email, user_data, connection):
     """
     send_email(email, subject, body)
     st.success("Password reset link has been sent to your email.")
-# def reset_password(email,user_data):
-#     st.write(user_data)
-#     first_name        = user_data['first_name']
-#     last_name         = user_data['last_name']
-#     username          = user_data['username']
-#     email             = user_data['email']
-#     dob               = user_data['dob']
-#     password          = user_data['password']
-#     date_of_creation  = user_data['date_of_creation']
-
-#     subject = "Request to forgot password"
-#     body    =   f"""
-#                     Dear {first_name} {last_name},
-
-#                     We have received a request to reset the password for your account (Username: {username}) due to a forgotten password. Your account was created on {date_of_creation}.
-
-#                     Please find your password below:
-
-#                     Password: {password}
-
-#                     To ensure the security of your account, we recommend updating your password immediately after logging in.
-
-#                     If you did not request this password reset, please contact our support team immediately.
-
-#                     Thank you for your prompt attention to this matter.
-                    
-#                     Best regards,
-#                     Manish Kashyap
-#                     CEO
-#                     Stock Analysis
-#                 """
-#     send_email(email, subject, body)
-
 
 
 def forgot_user_id(first_name, last_name):
