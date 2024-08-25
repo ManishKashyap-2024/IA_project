@@ -90,11 +90,11 @@ class StockAnalysisApp:
 
 
     def set_date_inputs(self):
-        col1, col2 = st.columns([1,1])
+        col1, col2 = st.sidebar.columns([1,1])
         with col1:
-            self.start_date = st.sidebar.date_input("Start Date", self.start_date)
+            self.start_date = st.date_input("Start Date", self.start_date)
         with col2:
-            self.end_date   = st.sidebar.date_input("End Date", self.end_date)
+            self.end_date   = st.date_input("End Date", self.end_date)
 
     def choose_ticker(self):
         self.selected_ticker = st.sidebar.selectbox('Stock Ticker', self.ticker_list)

@@ -23,42 +23,40 @@ def verify_token(connection, token):
 
 
 def reset_password_page():
-    st.title("Reset Password")
-
-    # # Get the token from the URL
-    # token = st.experimental_get_query_params().get("token")
+    # Get the token from the URL
+    token = st.experimental_get_query_params().get("token")
     
-    # if not token:
-    #     st.error("No token provided.")
-    #     return
+    if not token:
+        st.error("No token provided.")
+        return
 
-    # connection = create_connection()
-    # user_data = verify_token(connection, token[0])
+    connection = create_connection()
+    user_data = verify_token(connection, token[0])
 
-    # if user_data:
-    #     st.success("Token verified. Please reset your password.")
-    #     new_password = st.text_input("New Password", type="password")
-    #     confirm_password = st.text_input("Confirm New Password", type="password")
-    #     if st.button("Reset Password"):
-    #         if new_password == confirm_password:
-    #             try:
-    #                 cursor = connection.cursor()
-    #                 update_query = '''
-    #                 UPDATE user_accounts
-    #                 SET password = %s, reset_token = NULL, token_expiry = NULL
-    #                 WHERE id = %s
-    #                 '''
-    #                 cursor.execute(update_query, (new_password, user_data['id']))
-    #                 connection.commit()
-    #                 st.success("Password has been reset successfully.")
-    #             except Error as e:
-    #                 st.error(f"Error resetting password: {e}")
-    #         else:
-    #             st.error("Passwords do not match.")
-    # else:
-    #     st.error("Invalid or expired token.")
+    if user_data:
+        st.success("Token verified. Please reset your password.")
+        new_password = st.text_input("New Password", type="password")
+        confirm_password = st.text_input("Confirm New Password", type="password")
+        if st.button("Reset Password"):
+            if new_password == confirm_password:
+                try:
+                    cursor = connection.cursor()
+                    update_query = '''
+                    UPDATE user_accounts
+                    SET password = %s, reset_token = NULL, token_expiry = NULL
+                    WHERE id = %s
+                    '''
+                    cursor.execute(update_query, (new_password, user_data['id']))
+                    connection.commit()
+                    st.success("Password has been reset successfully.")
+                except Error as e:
+                    st.error(f"Error resetting password: {e}")
+            else:
+                st.error("Passwords do not match.")
+    else:
+        st.error("Invalid or expired token.")
 
-    # connection.close()
+    connection.close()
 
 if __name__ == "__main__":
     reset_password_page()

@@ -126,7 +126,7 @@ def reset_password(email, user_data, connection):
     date_of_creation = user_data['date_of_creation']
 
     subject = "Password Reset Request"
-    reset_link = f"http://localhost:8501/reset?token={reset_token}"
+    reset_link = f"https://stockmarketinsight.streamlit.app/reset?token={reset_token}"
     body = f"""
     Dear {first_name} {last_name},
 
