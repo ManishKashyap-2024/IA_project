@@ -250,3 +250,27 @@ def forgot_password(connection, email):
     except Error as e:
         st.error(f"Error retrieving user information: {e}")
         return False, None  # Return False and None in case of error
+
+
+
+def get_user_emails(connection, first_name, last_name):
+    try:
+        cursor = connection.cursor(dictionary=True)
+        
+        # Query to check if the first_name and last_name exist
+        query = """
+            SELECT first_name, last_name, email FROM user_accounts 
+            WHERE first_name = %s OR last_name = %s
+        """
+        cursor.execute(query, (first_name, last_name))
+        results = cursor.fetchall()
+        
+        cursor.close()
+        
+        if results:
+            return results
+        else:
+            return None
+    except Error as e:
+        st.error(f"Error retrieving user information: {e}")
+        return None

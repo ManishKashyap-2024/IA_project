@@ -3,15 +3,8 @@ from logics.database import *
 
 from streamlit_extras.switch_page_button import switch_page
 
-from cryptography.fernet import Fernet
-
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-
-
 from logics.send_email import send_email
-
+from pages.admin import admin_login
 def login():
     # Create tabs
     tab1, tab2 = st.tabs(["User", "Admin"])
@@ -62,12 +55,15 @@ def login():
             admin_login_button = st.form_submit_button("Login")
 
         if admin_login_button:
-            admin_id = st.secrets["admin"]["user_id"]
+            admin_id       = st.secrets["admin"]["user_id"]
             admin_password = st.secrets["admin"]["password"]
+            admin_email    = st.secrets["admin"]["email"]
 
             # Check if provided credentials match the stored credentials
             if admin_id_input == admin_id and admin_password_input == admin_password:
-                st.success(f"Welcome, {admin_id_input}!")
+                # Store admin_email in session state
+                st.session_state['admin_email'] = admin_email
+                switch_page("Admin")  # No need to pass admin_email as an argument now
             else:
                 st.error("Invalid User ID or Password.")
 
@@ -130,8 +126,7 @@ def reset_password(email, user_data, connection):
     date_of_creation = user_data['date_of_creation']
 
     subject = "Password Reset Request"
-    # reset_link = f"http://localhost:8501/reset?token={reset_token}"
-    reset_link = f"http://localhost:8501/reset"
+    reset_link = f"http://localhost:8501/reset?token={reset_token}"
     body = f"""
     Dear {first_name} {last_name},
 
@@ -187,7 +182,21 @@ def reset_password(email, user_data, connection):
 
 
 
+def forgot_user_id(first_name, last_name):
+    connection         = create_connection()
+    if connection:
+      user_info = get_user_emails(connection, first_name, last_name)
+    else:
+        connection.close()
 
+    if user_info:
+        formatted_info = []
+        for row in user_info:
+            formatted_info.append(f"{row['first_name']} {row['last_name']} - {row['email']}")
 
-def forgot_user_id():
-    st.warning("This will be added later")
+        st.success(f"Found {len(formatted_info)} user(s) with the specified first and last name")
+        st.write("\n".join(formatted_info))
+        return f"Matching users:\n" + "\n".join(formatted_info)
+    else:
+        st.warning("No user found with the specified first name and last name")
+        return "No user found with the specified first name and last name"

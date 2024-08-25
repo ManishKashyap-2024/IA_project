@@ -20,6 +20,7 @@ with tab1:
         connection         = create_connection()
         success, user_data = forgot_password(connection, email)
         if success:
+            st.warning("This is in progress! Thanks")
             reset_password(email,user_data, connection)  # Use the result in another function
         else:
             st.error("Email not found.")
@@ -39,5 +40,7 @@ with tab2:
         forgot_id_button = st.form_submit_button("Forgot ID")
 
     if forgot_id_button:
-        forgot_user_id()
+        forgot_user_id(first_name, last_name)
+
+
         

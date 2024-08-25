@@ -57,12 +57,3 @@ else:
     st.error("You must be logged in to access this page.")
     st.stop()  # Stop further execution of the page content
 
-
-
-
-
-            # from logics.stock_prices import StockAnalysisApp
-
-
-
-

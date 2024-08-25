@@ -23,4 +23,3 @@ def send_email(to_address, subject, body):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.send_message(msg)
-        st.success("Please Check Your Mail Inbox")

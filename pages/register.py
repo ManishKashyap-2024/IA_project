@@ -7,11 +7,6 @@ st.sidebar.page_link("pages/register.py", label="Register", icon="👤")
 st.sidebar.page_link("pages/forgot.py",   label="Forgot Creditional",   icon="❓")
 
 
-# check_database_connectivity = st.checkbox('Database Connectivity')
-
-# if check_database_connectivity:
-#     db_connection()
-
 with st.form("Sign Up Form"):
     email            = st.text_input("Email")
     col1, col2 = st.columns([1,1])
