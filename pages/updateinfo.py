@@ -2,7 +2,7 @@ import streamlit as st
 from logics.database import create_connection, get_user_info, update_user_info
 
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 
 # Check if user is logged in
 if 'logged_in' in st.session_state and st.session_state['logged_in']:
@@ -17,7 +17,7 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
         # Retrieve user info from the database
         user_info = get_user_info(connection, user_id)
         if user_info:
-            st.sidebar.success(f"Welcome, {user_info['last_name']}!")
+            st.sidebar.success(f"Welcome, {user_info['first_name']}!")
 
             col1, col2 = st.columns([1,3])
             with col1:

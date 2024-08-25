@@ -3,7 +3,7 @@ import bcrypt
 from logics.database import create_connection, get_user_info, update_user_password
 
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 
 # Check if user is logged in
 if 'logged_in' in st.session_state and st.session_state['logged_in']:
