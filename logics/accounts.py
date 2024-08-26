@@ -41,7 +41,7 @@ def login():
                 connection.close()
 
 
-    # Tab 2: About
+    # Tab 2: Admin
     with tab2:
         with st.form("Admin Login Form"):
             # Input fields for User ID and Password
@@ -57,7 +57,6 @@ def login():
 
             # Check if provided credentials match the stored credentials
             if admin_id_input == admin_id and admin_password_input == admin_password:
-                st.session_state['logged_in'] = True
                 st.session_state['user_id']   = admin_id
                 # Store admin_email in session state
                 st.session_state['admin_email'] = admin_email

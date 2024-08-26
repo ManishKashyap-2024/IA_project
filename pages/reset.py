@@ -2,7 +2,8 @@ import streamlit as st
 from logics.database import create_connection  # Import your connection function
 from mysql.connector import Error
 import bcrypt
-
+from streamlit_extras.switch_page_button import switch_page
+import time
 
 st.set_page_config(layout='centered')
 
@@ -52,6 +53,8 @@ def reset_password_page():
                     cursor.execute(update_query, (hashed_password, user_data['id']))
                     connection.commit()
                     st.success("Password has been reset successfully.")
+                    time.sleep(5)  # Sleep for 2 seconds
+                    switch_page("Main")
                 except Error as e:
                     st.error(f"Error resetting password: {e}")
             else:
