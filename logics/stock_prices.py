@@ -43,7 +43,7 @@ class StockAnalysisApp:
         self.init_state_variables()
 
 
-        col1, col2, col3, col4 = st.columns([2,1.7,1.1,10])
+        col1, col2, col3, col4 = st.columns([1,1,1,1])
         with col1:
             if st.button('Show Bollinger Bands'):
                 st.session_state.bollinger_bands = True

@@ -21,12 +21,14 @@ def login():
         if user_login_button:
             connection = create_connection()
             if connection:
-                print("\n\n\n\t\t Connection created with database for LOGIN")
-
                 if check_login_credentials(connection, user_id_input, user_password_input):
+                    # Display progress bar for 3 seconds
+                    progress_bar = st.progress(0)
+                    for i in range(100):
+                        time.sleep(0.03)
+                        progress_bar.progress(i + 1)  
+                    time.sleep(5)                       
                     st.success("Login successful!")
-
-                    print("\n\t\t* Login Successfull\n")
                     # Set session state to indicate the user is logged in
                     st.session_state['logged_in'] = True
                     st.session_state['user_id']   = user_id_input
@@ -36,7 +38,11 @@ def login():
                  
 
                 else:
-                    print("\n\t\t* Login Fail\n")
+                    # Display progress bar for 3 seconds
+                    progress_bar = st.progress(0)
+                    for i in range(100):
+                        time.sleep(0.03)
+                        progress_bar.progress(i + 1) 
                     st.error("Invalid User ID or Password.")
                 connection.close()
 
@@ -62,6 +68,12 @@ def login():
                 st.session_state['admin_email'] = admin_email
                 switch_page("Admin")  # No need to pass admin_email as an argument now
             else:
+                # Display progress bar for 3 seconds
+                progress_bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.03)
+                    progress_bar.progress(i + 1) 
+
                 st.error("Invalid User ID or Password.")
 
 def add_user(username, first_name, last_name, email, dob, password):
@@ -70,6 +82,12 @@ def add_user(username, first_name, last_name, email, dob, password):
         table_name = "user_accounts"
         if not check_table_exists(connection, table_name):
             create_table(connection)
+
+        # Display progress bar for 3 seconds
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.03)
+            progress_bar.progress(i + 1) 
 
         # Validation checks
         if not (email and first_name and last_name and dob and username):
@@ -158,9 +176,21 @@ def forgot_user_id(first_name, last_name):
         for row in user_info:
             formatted_info.append(f"{row['first_name']} {row['last_name']} - {row['email']}")
 
+        # Display progress bar for 3 seconds
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.03)
+            progress_bar.progress(i + 1)  
+
         st.success(f"Found {len(formatted_info)} user(s) with the specified first and last name")
         st.write("\n".join(formatted_info))
         return f"Matching users:\n" + "\n".join(formatted_info)
     else:
+        # Display progress bar for 3 seconds
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.03)
+            progress_bar.progress(i + 1)  
+
         st.warning("No user found with the specified first name and last name")
         return "No user found with the specified first name and last name"

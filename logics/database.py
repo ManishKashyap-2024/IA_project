@@ -2,6 +2,7 @@ import streamlit as st
 import mysql.connector
 from mysql.connector import Error
 import bcrypt
+import time
 
 def create_connection():
     try:
@@ -75,6 +76,13 @@ def insert_user(connection, username, first_name, last_name, email, dob, passwor
         cursor.execute(insert_query, (username, first_name, last_name, email, dob, hashed_password))
         connection.commit()
         cursor.close()
+
+        # Display progress bar for 3 seconds
+        progress_bar = st.progress(0)
+        for i in range(100):
+            time.sleep(0.03)
+            progress_bar.progress(i + 1)  
+
         st.success("User account created successfully.")
     except Error as e:
         st.error(f"Error inserting data: {e}")
@@ -125,6 +133,11 @@ def db_connection():
         if not check_table_exists(connection, table_name):
             create_table(connection)
         else:
+            # Display progress bar for 3 seconds
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.03)
+                progress_bar.progress(i + 1)  
             st.info(f"Table '{table_name}' already exists.")
         connection.close()
 
@@ -190,10 +203,21 @@ def update_user_info(connection, email, first_name, last_name, dob):
             st.session_state['dob'] = dob      
 
             cursor.close()
+
+            # Display progress bar for 3 seconds
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.03)
+                progress_bar.progress(i + 1)
             st.success("User information updated successfully")
             return f"User information updated successfully for email: {email}"
         else:
             cursor.close()
+            # Display progress bar for 3 seconds
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.03)
+                progress_bar.progress(i + 1)
             return f"No user found with email: {email}"
     except Error as e:
         st.error(f"Error retrieving or updating user information: {e}")
