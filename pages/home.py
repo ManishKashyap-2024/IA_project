@@ -1,10 +1,27 @@
 import streamlit as st
 from logics.database import create_connection, get_user_info
 from streamlit_extras.switch_page_button import switch_page
+import time
+import json
+import requests
+from streamlit_lottie import st_lottie, st_lottie_spinner
 
 
 st.set_page_config(layout="wide")
 
+
+
+@st.cache_data
+def load_lottiefile(filepath: str):
+    with open(filepath, "r") as f:
+        data = json.load(f)
+    return data
+
+def load_lottieurl(url: str):
+    r = requests.get(url)
+    if r.status_code != 200:
+        return None
+    return r.json()
 
 # Check if user is logged in
 if 'logged_in' in st.session_state and st.session_state['logged_in']:
@@ -43,7 +60,28 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
 
             logout = st.sidebar.button("LogOut")
             if logout:
+                # Display progress bar for 3 seconds
+                progress_bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.03)
+                    progress_bar.progress(i + 1) 
+
+                time.sleep(5)
                 switch_page("Main")
+
+            st.markdown("""
+            <style>
+                [data-testid=stSidebar] {
+                    background-color: #3e3e40;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            with st.sidebar:
+                    st.image("./Animations/stock2.jpg", 
+                            #caption="Your PNG caption",
+                            width=350)  
+
+
 
 
         else:

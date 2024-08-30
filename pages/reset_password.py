@@ -1,7 +1,7 @@
 import streamlit as st
 import bcrypt
 from logics.database import create_connection, get_user_info, update_user_password
-
+import time
 
 st.set_page_config(layout="centered")
 
@@ -44,14 +44,35 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
                             hashed_new_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
                             # Update the password in the database (you need to implement this function)
                             update_user_password(connection, user_id, hashed_new_password)
+                             # Display progress bar for 3 seconds
+                            progress_bar = st.progress(0)
+                            for i in range(100):
+                                time.sleep(0.03)
+                                progress_bar.progress(i + 1) 
                             st.success("Password has been successfully updated!")
                         else:
+                            # Display progress bar for 3 seconds
+                            progress_bar = st.progress(0)
+                            for i in range(100):
+                                time.sleep(0.03)
+                                progress_bar.progress(i + 1) 
                             st.error("New passwords do not match.")
                 else:
+                    # Display progress bar for 3 seconds
+                    progress_bar = st.progress(0)
+                    for i in range(100):
+                        time.sleep(0.03)
+                        progress_bar.progress(i + 1) 
                     st.error("Current password is incorrect.")
 
 
         else:
+            # Display progress bar for 3 seconds
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.03)
+                progress_bar.progress(i + 1) 
+
             st.error("User information could not be retrieved.")
 
             # Close the database connection
@@ -60,6 +81,19 @@ if 'logged_in' in st.session_state and st.session_state['logged_in']:
         st.sidebar.page_link("pages/home.py",           label="Home",           icon="🏠")
         st.sidebar.page_link("pages/updateinfo.py",     label="Update Info",    icon="⚙️")
         st.sidebar.page_link("pages/reset_password.py", label="Reset Password", icon="🗝️")
+
+        st.markdown("""
+        <style>
+            [data-testid=stSidebar] {
+                background-color: #3e3e40;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        with st.sidebar:
+                st.image("./Animations/stock2.jpg", 
+                        #caption="Your PNG caption",
+                        width=350) 
+
 
 
 else:
