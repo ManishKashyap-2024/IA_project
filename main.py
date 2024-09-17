@@ -1,14 +1,9 @@
 import streamlit as st
-
 from logics.accounts import login
-
 
 st.set_page_config(layout= 'centered')
 
-
 def main():
-
-
 
     st.markdown("""
     <style>
