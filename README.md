@@ -1,4 +1,4 @@
-# stock insights app
+# Stock Insights app using Streamlit
 
 1. Install prerequisite libraries
 
