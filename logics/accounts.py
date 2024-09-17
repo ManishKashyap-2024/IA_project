@@ -25,7 +25,7 @@ def login():
                     # Display progress bar for 3 seconds
                     progress_bar = st.progress(0)
                     for i in range(100):
-                        time.sleep(0.02)
+                        time.sleep(0.03)
                         progress_bar.progress(i + 1)  
                     time.sleep(5)                       
                     st.success("Login successful!")
