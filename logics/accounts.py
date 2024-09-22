@@ -156,9 +156,7 @@ def reset_password(email, user_data, connection):
     Thank you for your prompt attention to this matter.
     
     Best regards,
-    Manish Kashyap
-    CEO
-    Stock Analysis
+    Manish Ranjan Kashyap
     """
     send_email(email, subject, body)
     st.success("Password reset link has been sent to your email.")
