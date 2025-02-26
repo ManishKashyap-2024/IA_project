@@ -15,13 +15,13 @@ key = {
 table = 'user_accounts' 
 
 try:
-    connection = mysql.connector.connect(
+    db_credentials = mysql.connector.connect(
         host=key["host"],
         user=key["user"],
         password=key["password"],
         database=key["database"],
         port=key["port"]
     )
-    cursor = connection.cursor()
+    cursor = db_credentials.cursor()
 except mysql.connector.Error as err:
     st.error(f"Error: {err}")

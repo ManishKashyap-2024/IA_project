@@ -5,22 +5,12 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import mysql.connector
-from db_connection import table, connection, cursor
+from db_connection import table, db_credentials, cursor
 
-cursor = cursor
-connection = connection
-
-def db_credentials():
-    db_credentials = mysql.connector.connect(
-                    host="sql12.freesqldatabase.com",
-                    database="sql12727772",
-                    user="sql12727772",
-                    password="ikTEqzWqtP",
-                    port=3306
-                )
-    return db_credentials
-
-
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+EMAIL_ADDRESS = "manish.r.kashyap1@gmail.com"
+EMAIL_PASSWORD = "dgvq ttgy vsdq zzoz"  # Use App Password, NOT your Gmail password
 
 class UserAuth:
     def __init__(self):
@@ -37,12 +27,6 @@ class UserAuth:
 
     def send_email(self, to_email, subject, body):
         """Send an email using smtplib."""
-
-        SMTP_SERVER = "smtp.gmail.com"
-        SMTP_PORT = 587
-        EMAIL_ADDRESS = "manish.r.kashyap1@gmail.com"
-        EMAIL_PASSWORD = "dgvq ttgy vsdq zzoz"  # Use App Password, NOT your Gmail password
-
         try:
             # Create a multipart email
             msg = MIMEMultipart()
@@ -222,7 +206,8 @@ class UserAuth:
         try:
             hashed_password = self.hash_password(password)
             
-
+            # Create a database connection
+            connection = db_credentials()
             cursor = connection.cursor()  # Create a cursor
 
             if username and email and dob and password:
