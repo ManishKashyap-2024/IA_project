@@ -1,13 +1,9 @@
 import streamlit as st
 import mysql.connector
-import toml
-
 
 # Extract database credentials
 db_config = st.secrets["connections"]["freesqldatabase"]
 
-# Use credentials in your script
-# url = db_config["host"]
 key = {
     "host": db_config["host"],
     "database": db_config["database"],
@@ -18,18 +14,14 @@ key = {
 
 table = 'user_accounts' 
 
-def db_connection():
-    # Establishing MySQL Connection
-    try:
-        supabase = mysql.connector.connect(
-            host=key["host"],
-            user=key["user"],
-            password=key["password"],
-            database=key["database"],
-            port=key["port"]
-        )
-        cursor = supabase.cursor()
-
-        return cursor
-    except mysql.connector.Error as err:
-        st.error(f"Error: {err}")
+try:
+    connection = mysql.connector.connect(
+        host=key["host"],
+        user=key["user"],
+        password=key["password"],
+        database=key["database"],
+        port=key["port"]
+    )
+    cursor = connection.cursor()
+except mysql.connector.Error as err:
+    st.error(f"Error: {err}")
