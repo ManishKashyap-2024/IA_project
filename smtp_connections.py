@@ -1,5 +1,4 @@
 import streamlit as st
-import mysql.connector
 
 # Extract database credentials
 smtp_config = st.secrets["connections"]["smpt_server"]

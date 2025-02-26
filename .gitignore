@@ -7,3 +7,4 @@ test_yfinance.py
 stock_price copy 2.py
 test_db_url.py
 UserAuth copy.py
+requirements1.txt
