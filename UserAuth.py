@@ -5,12 +5,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import mysql.connector
-from db_connection import table, db_credentials, cursor
-
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = "manish.r.kashyap1@gmail.com"
-EMAIL_PASSWORD = "dgvq ttgy vsdq zzoz"  # Use App Password, NOT your Gmail password
+from db_connection import table, db_credentials
+from smtp_connections import *
 
 class UserAuth:
     def __init__(self):

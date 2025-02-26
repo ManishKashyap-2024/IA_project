@@ -14,14 +14,20 @@ key = {
 
 table = 'user_accounts' 
 
-try:
-    db_credentials = mysql.connector.connect(
-        host=key["host"],
-        user=key["user"],
-        password=key["password"],
-        database=key["database"],
-        port=key["port"]
-    )
-    cursor = db_credentials.cursor()
-except mysql.connector.Error as err:
-    st.error(f"Error: {err}")
+def db_credentials():
+    try:
+        db_credentials = mysql.connector.connect(
+            host=key["host"],
+            user=key["user"],
+            password=key["password"],
+            database=key["database"],
+            port=key["port"]
+        )
+        return db_credentials
+    except mysql.connector.Error as err:
+        st.error(f"Error: {err}")
+
+    
+        
+
+
