@@ -3,8 +3,9 @@ import yfinance as yf
 import pandas as pd
 import cufflinks as cf
 import datetime
-
 import os
+import plotly.graph_objs as go
+from logics.utils import calculate_rsi, calculate_bollinger_bands, calculate_macd
 
 class StockAnalysisApp:
     def __init__(self):
@@ -139,24 +140,145 @@ class StockAnalysisApp:
 
     def show_bollinger_bands(self):
         st.header('**Bollinger Bands**')
-        quant_fig = cf.QuantFig(self.ticker_history, title='Bollinger Bands Chart', legend='top', name=self.selected_ticker)
-        quant_fig.add_bollinger_bands()
-        fig = quant_fig.iplot(asFigure=True)
+        
+        # Calculate Bollinger Bands
+        rolling_mean, upper_band, lower_band = calculate_bollinger_bands(self.ticker_history)
+        
+        # Create the Plotly figure
+        fig = go.Figure()
+        
+        # Add traces
+        fig.add_trace(go.Scatter(x=self.ticker_history.index, y=self.ticker_history['Close'], name='Close Price'))
+        fig.add_trace(go.Scatter(x=self.ticker_history.index, y=upper_band, name='Upper Band', line=dict(color='red')))
+        fig.add_trace(go.Scatter(x=self.ticker_history.index, y=rolling_mean, name='Rolling Mean', line=dict(color='blue')))
+        fig.add_trace(go.Scatter(x=self.ticker_history.index, y=lower_band, name='Lower Band', line=dict(color='green')))
+        
+        # Update layout
+        fig.update_layout(
+            title='Bollinger Bands',
+            xaxis_title='Date',
+            yaxis_title='Price',
+            legend_title='Legend'
+        )
+        
+        # Display the figure in Streamlit
         st.plotly_chart(fig)
 
     def show_macd(self):
         st.header('**MACD (Moving Average Convergence Divergence)**')
-        quant_fig_macd = cf.QuantFig(self.ticker_history, title="MACD Chart", legend='top', name=self.selected_ticker)
-        quant_fig_macd.add_macd()
-        fig_macd = quant_fig_macd.iplot(asFigure=True)
-        st.plotly_chart(fig_macd)
+        
+        # Calculate MACD components
+        macd_line, signal_line, macd_histogram = calculate_macd(self.ticker_history)
+        
+        # Create the Plotly figure
+        fig = go.Figure()
+        
+        # Add MACD line
+        fig.add_trace(go.Scatter(
+            x=self.ticker_history.index,
+            y=macd_line,
+            name='MACD Line',
+            line=dict(color='blue')
+        ))
+        
+        # Add Signal line
+        fig.add_trace(go.Scatter(
+            x=self.ticker_history.index,
+            y=signal_line,
+            name='Signal Line',
+            line=dict(color='red')
+        ))
+        
+        # Add MACD Histogram
+        fig.add_trace(go.Bar(
+            x=self.ticker_history.index,
+            y=macd_histogram,
+            name='MACD Histogram',
+            marker=dict(color='green')
+        )
+        )
+        
+        # Update layout
+        fig.update_layout(
+            title='MACD Chart',
+            xaxis_title='Date',
+            yaxis_title='MACD',
+            legend_title='Legend',
+            hovermode='x unified'
+        )
+        
+        # Display the figure in Streamlit
+        st.plotly_chart(fig)
+
 
     def show_rsi(self):
         st.header('**Relative Strength Index (RSI)**')
-        quant_fig_rsi = cf.QuantFig(self.ticker_history, title="RSI Chart", legend='top', name=self.selected_ticker)
-        quant_fig_rsi.add_rsi(periods=14, showbands=False)
-        fig_rsi = quant_fig_rsi.iplot(asFigure=True)
-        st.plotly_chart(fig_rsi)
+        
+        # Calculate RSI
+        rsi = calculate_rsi(self.ticker_history, periods=14)
+        
+        # Create the Plotly figure
+        fig = go.Figure()
+        
+        # Add RSI line
+        fig.add_trace(go.Scatter(
+            x=self.ticker_history.index,
+            y=rsi,
+            name='RSI',
+            line=dict(color='purple')
+        ))
+        
+        # Add overbought and oversold levels
+        fig.add_trace(go.Scatter(
+            x=self.ticker_history.index,
+            y=[70] * len(self.ticker_history),
+            name='Overbought (70)',
+            line=dict(color='red', dash='dash')
+        ))
+        fig.add_trace(go.Scatter(
+            x=self.ticker_history.index,
+            y=[30] * len(self.ticker_history),
+            name='Oversold (30)',
+            line=dict(color='green', dash='dash')
+        ))
+        
+        # Update layout
+        fig.update_layout(
+            title='RSI Chart',
+            xaxis_title='Date',
+            yaxis_title='RSI',
+            legend_title='Legend',
+            hovermode='x unified'
+        )
+        
+        # Display the figure in Streamlit
+        st.plotly_chart(fig)
+
+
+    def show_trading_volume_chart(self):
+        st.header('**Trading Volume**')
+        
+        # Create the Plotly figure
+        fig = go.Figure()
+        
+        # Add volume bars
+        fig.add_trace(go.Bar(
+            x=self.ticker_history.index,
+            y=self.ticker_history['Volume'],
+            name='Volume',
+            marker=dict(color='rgba(255, 153, 51, 1.0)')  # Use a valid color format
+        ))
+        
+        # Update layout
+        fig.update_layout(
+            title='Trading Volume',
+            xaxis_title='Date',
+            yaxis_title='Volume',
+            hovermode='x unified'
+        )
+        
+        # Display the figure in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
 
     def show_analyst_ratings(self):
         st.header('**Analyst Ratings**')
@@ -168,8 +290,28 @@ class StockAnalysisApp:
 
     def show_trading_volume_chart(self):
         st.header('**Trading Volume**')
-        volume_chart = self.ticker_history['Volume'].iplot(asFigure=True, kind='bar', xTitle='Date', yTitle='Volume', title='Trading Volume', theme='pearl')
-        st.plotly_chart(volume_chart, use_container_width=True)
+        
+        # Create the Plotly figure
+        fig = go.Figure()
+        
+        # Add volume bars
+        fig.add_trace(go.Bar(
+            x=self.ticker_history.index,
+            y=self.ticker_history['Volume'],
+            name='Volume',
+            marker=dict(color='rgba(255, 153, 51, 1.0)')  # Use a valid color format
+        ))
+        
+        # Update layout
+        fig.update_layout(
+            title='Trading Volume',
+            xaxis_title='Date',
+            yaxis_title='Volume',
+            hovermode='x unified'
+        )
+        
+        # Display the figure in Streamlit
+        st.plotly_chart(fig, use_container_width=True)
 
     def show_income_statement(self):
         annual_income = self.ticker_info.financials
